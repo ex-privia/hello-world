@@ -2,22 +2,54 @@
 <api context="/everest" name="RORS" xmlns="http://ws.apache.org/ns/synapse">
     <resource methods="POST" url-mapping="/ROs">
         <inSequence>
-            <!-- save Location http header of the response in RONAME -->
+            <!--++
+        				It is expected that the client calls this operation with this request:
+        				
+						POST /everest/ROs HTTP/1.1
+						Host: localhost:8280
+						User-Agent: curl/7.49.1
+						Accept: */*
+						Content-Type: application/json
+						Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+						Slug: OneMoreRo
+						Content-Length: 55
+						
+						{"ro_title": "The Title", "ro_desc": "The Description"} 
+						
+ 						Please note: OneMoreRo, The Title, The Description are examples of ro name, title and description, and 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8 must be the real user token recognized bt the ro api
+						curl -v http://localhost:8280/everest/ROs -H "Content-Type: application/json" -H "Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8" -H "Slug: OneMoreRo" -d "{\"ro_title\": \"The Title\", \"ro_desc\": \"The Description\"}" 
+        			 -->
             <log level="custom">
                 <property name="mylog" value="***************************** RECEIVED REQUEST **************************"/>
-                <property expression="json-eval($.)" name="Request_Payload"/>
                 <property expression="$trp:Authorization" name="auth"/>
                 <property expression="$trp:Slug" name="slug"/>
             </log>
+            <!--++
+                        Let's call the RO API for the creation of an RO.
+                        
+                    	I need to create a POST request to this url:
+                    	
+                    	http://sandbox.wf4ever-project.org/rodl/ROs/
+                    	
+                    	with header parameters like these:
+                    	 
+                        Slug: OneMoreRo
+						Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+                        
+                        Please note that: OneMoreRo is an example of ro name, 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8 must be the real user token recognized by roAPI.
+                        
+                        The body of the POST request must be empty.
+                     -->
+            <!-- next directive is needed in order to not block the POST request containing no body -->
             <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
-            <property action="remove" name="NO_ENTITY_BODY" scope="axis2"/>
-            <property expression="$trp:Slug" name="Slug" scope="transport" type="STRING"/>
+            <!-- No directive is needed to set Slug and Authorization header parameters because they are exactly equal to those coming from the request  -->
             <!-- next two directives are needed to empty the body for the next call to rohub: I do not know how to empty a json body, so I transorm it in xml -->
             <!-- transform the body format from json to xml -->
+            <!-- (WSO2ESB) really speaking, here it is creating a new xml property of the mc containing the xml tree of the request body, in addition to the json tree-->
             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
-            <!-- empty the xml body through this script-->
+            <!-- empty the payloadXML of the request through this script-->
+            <!-- (WSO2ESB) the deletion of this xml tree does not affect the json object. Indeed the json object unaltered will be used next. (see below) -->
             <script language="js"><![CDATA[mc.getEnvelope().getBody().getFirstElement().detach();]]></script>
-            <!-- I was unable to find a similar way in case of json body, so used the trick to use a wrong formatter (text instead of json) reaching the same goal -->
             <log level="custom">
                 <property name="mylog" value="***************************** CALL: CREATE A NEW RESEARCH OBJECT **************************"/>
             </log>
@@ -26,64 +58,104 @@
                     <http uri-template="http://sandbox.wf4ever-project.org/rodl/"/>
                 </endpoint>
             </call>
-            <filter regex=".*" source="get-property('axis2', 'HTTP_SC')">
+            <filter regex="201" source="get-property('axis2', 'HTTP_SC')">
                 <then>
-                    <log level="full"/>
-                    <log level="custom">
-                        <property expression="get-property('axis2', 'HTTP_SC')" name="STATUS_CODE"/>
-                    </log>
-                    <property expression="$trp:Location" name="RONAME" scope="axis2" type="STRING"/>
-                    <enrich>
-                        <source clone="true" xpath="get-property('axis2', 'RONAME')"/>
-                        <target property="LOCATION" type="property"/>
-                    </enrich>
                     <log level="custom">
                         <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
                         <property expression="$trp:Location" name="LOCATION"/>
                     </log>
+                    <!--++
+                        Let's call the RO API to annotate the just created RO with title and description (see REQUEST below), and let's reply to the client (see RESPONSE below).
+
+						REQUEST
+						
+                    	I need to create a POST request to this url (This must be the url given by the value of "Location" http header in the response of the previous RO Creation call):
+                    	
+	                    	http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/
+                    	
+                    	with header parameters like these:
+                    	 
+	                        Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+	                        Slug: title.rdf
+							Link: <http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/>; rel="http://purl.org/ao/annotatesResource
+                        
+                        Please note that: OneMoreRo-14 is an example of ro name, and the Slug is an internal name at the moment not settable by the user and is always "title.rdf".
+                        
+                        The Payload of the POST request must be the rdf/xml representation of the body of the annotation.
+
+		                    <rdf:RDF xmlns:roevo='http://purl.org/wf4ever/roevo#' xmlns:pavprov='http://purl.org/pav/provenance/2.0/' xmlns:ore-owl='http://purl.org/wf4ever/ore-owl' xmlns:ao='http://purl.org/ao/' xmlns:skos='http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf' xmlns:prov='http://www.w3.org/ns/prov#' xmlns:wfdesc='http://purl.org/wf4ever/wfdesc#' xmlns:pav='http://purl.org/pav/2.0/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:ro='http://purl.org/wf4ever/ro#' xmlns:roterms='http://purl.org/wf4ever/roterms#' xmlns:foaf='http://xmlns.com/foaf/0.1/' xmlns:wfprov='http://purl.org/wf4ever/wfprov#' xmlns:dct='http://purl.org/dc/terms/' xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:pavauth='http://purl.org/pav/authoring/2.0/' xmlns:wf4ever='http://purl.org/wf4ever/wf4ever#' xmlns:aocore='http://purl.org/ao/core/' >
+			                    <rdf:Description rdf:about=''>
+				                    <dct:title rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_title}</dct:title>
+				                    <dct:description rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_desc}</dct:description>
+			                    </rdf:Description>
+			                </rdf:RDF>
+
+                        Please note that it is possible to put both annotations (title and descritpion) in one rdf/xml resource, thas making it necessary to call the RO API jsut once instead of two.
+						In addition note that it is not needed to specify the resource (in this case the RO) these annotations are bout, indeed rdf:about attribute is left empty.
+
+						This is good because I do not know how to set xml attribute values in the next template instruction (but only xml element values using curly braces!)
+
+						RESPONSE 
+							It must be something like this:
+						
+							HTTP/1.1 201 Created
+							
+							Content-Type: application/json; charset=UTF-8
+							Date: Sun, 13 Nov 2016 19:45:13 GMT
+							Content-Length: 71
+							
+							{"ro_name":"http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/"}
+					
+						Please note that ro_name field value in the json body must be the url given by the value of the Location http header in the response of the previous call to the RO API for the annotation.
+                     -->
+                    <!-- save Location http header of the response in RONAME property -->
+                    <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
+                    <!-- save the url of the create RO needed in the response to the client -->
+                    <enrich>
+                        <source clone="true" xpath="get-property('RONAME')"/>
+                        <target property="LOCATION" type="property"/>
+                    </enrich>
                     <!-- create the rdf xml for the title and the description that will be aggregated to the RO as an annotation -->
                     <!-- from the former request body, values of ro_title and ro_desc fields are read into an rdf xml template -->
-                    <property expression="get-property('axis2', 'RONAME')" name="RONAME_default_scope" scope="default" type="STRING"/>
+                    <!-- (WSO2ESB) Note that I can still read the PayloadJSON from the mc even though with the previous access to the mc I deleted the payloadXML-->
                     <script language="js"><![CDATA[var ro_title = mc.getPayloadJSON().ro_title.toString();
 	                    var ro_desc = mc.getPayloadJSON().ro_desc.toString();
-	                    var ro_name = mc.getProperty('RONAME_default_scope');
+	                    var ro_name = mc.getProperty('RONAME');
 	                    mc.setPayloadXML(
 	                    	<rdf:RDF xmlns:roevo='http://purl.org/wf4ever/roevo#' xmlns:pavprov='http://purl.org/pav/provenance/2.0/' xmlns:ore-owl='http://purl.org/wf4ever/ore-owl' xmlns:ao='http://purl.org/ao/' xmlns:skos='http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf' xmlns:prov='http://www.w3.org/ns/prov#' xmlns:wfdesc='http://purl.org/wf4ever/wfdesc#' xmlns:pav='http://purl.org/pav/2.0/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:ro='http://purl.org/wf4ever/ro#' xmlns:roterms='http://purl.org/wf4ever/roterms#' xmlns:foaf='http://xmlns.com/foaf/0.1/' xmlns:wfprov='http://purl.org/wf4ever/wfprov#' xmlns:dct='http://purl.org/dc/terms/' xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:pavauth='http://purl.org/pav/authoring/2.0/' xmlns:wf4ever='http://purl.org/wf4ever/wf4ever#' xmlns:aocore='http://purl.org/ao/core/' > <rdf:Description rdf:about=''> <dct:title rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_title}</dct:title> <dct:description rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_desc}</dct:description> </rdf:Description> </rdf:RDF>
 	                    );]]></script>
                     <log level="custom">
                         <property name="mylog" value="***************************** RDFXML rendered **************************"/>
                     </log>
-                    <!-- remove Location header from previous response -->
+                    <!-- remove Location header coming from previous response -->
                     <property action="remove" name="Location" scope="transport"/>
                     <!-- choose the xml formatter -->
                     <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
                     <!-- set headers -->
                     <property name="Content-Type" scope="transport" type="STRING" value="application/rdf+xml"/>
                     <property name="Slug" scope="transport" type="STRING" value="title.rdf"/>
-                    <!-- I really do not know why I can't use $trp:Location instead of get-property('axis2', 'RONAME') -->
-                    <property expression="fn:concat('&lt;', get-property('axis2', 'RONAME'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
+                    <!-- (WSO2ESB) I really do not know why I can't use $trp:Location instead of get-property('RONAME') -->
+                    <property expression="fn:concat('&lt;', get-property('RONAME'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                     <log level="custom">
                         <property name="mylog" value="*********************** CALL: AGGREGATE A RESOURCE ********************"/>
-                        <property expression="fn:replace( syn:get-property( 'axis2', 'RONAME'), '([^/]*/)*([^/]*)/', '$2')" name="regex" xmlns:fn="http://www.w3.org/2005/xpath-functions" xmlns:syn="http://ws.apache.org/commons/ns/payload"/>
                         <property expression="get-property('transport', 'Link')" name="TheLink"/>
                     </log>
-                    <!-- expression="fn:replace( syn:get-property( 'axis2', 'RONAME'), '([^/]*/)*([^/]*)/?', '$2')" -->
-                    <property expression="fn:replace( syn:get-property( 'axis2', 'RONAME'), '([^/]*/)*([^/]*)/', '$2')" name="uri.var.roname" scope="default" type="STRING" xmlns:fn="http://www.w3.org/2005/xpath-functions" xmlns:syn="http://ws.apache.org/commons/ns/payload"/>
+                    <!-- call the annotation operation on the ro api -->
+                    <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
                     <call>
                         <endpoint>
-                            <http uri-template="http://sandbox.wf4ever-project.org/rodl/ROs/{uri.var.roname}/"/>
+                            <http uri-template="{uri.var.location}"/>
                         </endpoint>
                     </call>
-                    <!-- Location header -->
-                    <!--
-                    <property expression="get-property('axis2', 'RONAME')" name="Location" scope="operation" type="STRING"/>
-                    <header expression="get-property('axis2', 'RONAME')" name="Location" scope="transport"/>
-		            <script language="js"><![CDATA[mc.getEnvelope().getBody().getFirstElement().detach();]]></script>
-		            -->
-                    <property action="remove" name="Link" scope="transport"/>
-                    <property action="remove" name="Location" scope="transport"/>
-                    <property action="remove" name="Link" scope="transport"/>
+                    <!-- no http header must be set explicitly. Those coming from the response of the preceding call must be removed -->
+                    <!-- (WSO2ESB) There is no way to delete multiple headers with the same field name, indeed one is left from the previous response from roAPI to the next to the client: Link: <http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/>; rel="http://purl.org/ao/annotatesResource"-->
+                    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                    <!-- next directive is to avoid using Transfer-Encoding: chunked -->
                     <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                    <log level="custom">
+                        <property expression="$trp:Link" name="************"/>
+                    </log>
+                    <!-- set the json payload -->
                     <payloadFactory media-type="json">
                         <format>{"ro_name":"$1"}</format>
                         <args>
@@ -93,16 +165,180 @@
                     <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
                     <respond/>
                 </then>
-                <else/>
+                <else>
+                    <log level="full"/>
+                    <log level="custom">
+                        <property expression="get-property('axis2', 'HTTP_SC')" name="STATUS_CODE"/>
+                    </log>
+                </else>
             </filter>
         </inSequence>
-        <outSequence>
-            <send/>
-        </outSequence>
+        <outSequence/>
         <faultSequence/>
     </resource>
     <resource methods="POST" url-mapping="/second">
         <inSequence/>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/upload">
+        <inSequence>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <log level="custom">
+                <property name="banner" value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+            </log>
+            <!--            <log level="full"/>
+            <enrich>
+                <source clone="true" type="body"/>
+                <target property="body" type="property"/>
+            </enrich>
+            <log level="custom">
+                <property expression="get-property('body')" name="TheBody"/>
+            </log>
+-->
+            <!-- property name="messageType" scope="axis2" type="STRING" value="multipart/form-data"/>  -->
+            <!-- property name="messageType" scope="axis2" type="STRING" value="multipart/related"/>
+            <property name="ContentType" scope="axis2" type="STRING" value="multipart/related"/> -->
+            <send>
+                <endpoint>
+                    <http uri-template="http://localhost:8123/"/>
+                </endpoint>
+            </send>
+        </inSequence>
+        <outSequence>
+            <log level="custom">
+                <property name="banner" value="YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"/>
+            </log>
+            <log level="full"/>
+            <send/>
+        </outSequence>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/prova">
+        <inSequence>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[mc.setProperty( "MYPAYLOADXML", mc.getPayloadXML());
+            	mc.setProperty( "MYPAYLOADSOAP", mc.getEnvelopeXML());]]></script>
+            <log level="custom">
+                <property expression="json-eval($.)" name="mylog"/>
+                <property expression="get-property('MYPAYLOADXML')" name="MYPAYLOADXML"/>
+                <property expression="get-property('MYPAYLOADSOAP')" name="MYPAYLOADSOAP"/>
+            </log>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <script language="js"><![CDATA[mc.setProperty( "MYPAYLOADJSON", mc.getPayloadJSON());]]></script>
+            <log level="custom">
+                <property expression="get-property('MYPAYLOADJSON')" name="MYPAYLOADJSON"/>
+            </log>
+            <respond/>
+        </inSequence>
+        <outSequence/>
+        <faultSequence/>
+    </resource>
+    <resource methods="GET" url-mapping="/">
+        <inSequence>
+            <log level="custom">
+                <property name="banner" value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+            </log>
+            <property name="HTTP_METHOD" scope="axis2" type="STRING" value="POST"/>
+            <header name="Content-Length" scope="transport" value="0"/>
+            <header name="Accept" scope="transport" value="image/jpeg"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <call blocking="true">
+                <endpoint>
+                    <http uri-template="http://www.google.it/"/>
+                </endpoint>
+            </call>
+            <respond/>
+        </inSequence>
+        <outSequence>
+            <log level="custom">
+                <property name="banner" value="YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"/>
+            </log>
+            <log level="full"/>
+            <property name="messageType" scope="axis2" type="STRING" value="text/plain"/>
+            <send/>
+        </outSequence>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/json">
+        <inSequence>
+            <log level="custom">
+                <property expression="get-property('JSON_STRING')" name="JSON_STRING"/>
+            </log>
+            <log level="custom">
+                <property expression="$ctx:JSON_STRING" name="JSON_STRING_ctx"/>
+            </log>
+            <!-- log level="custom">
+                <property expression="json-eval($.)" name="json-eval($.)"/>
+            </log>
+            <log level="custom">
+                <property expression="$ctx:body" name="$ctx:body"/>
+            </log>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <log level="custom">
+                <property expression="$ctx:body" name="$ctx:body"/>
+            </log>
+            <script language="js"><![CDATA[mc.setProperty('mybody',mc.getEnvelope().getBody());]]></script>
+            <log level="custom">
+                <property name="banner" value="YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"/>
+                <property expression="get-property( 'mybody')" name="asd"/>
+            </log>
+            <script language="js"><![CDATA[mc.getEnvelope().getBody().getFirstElement().detach();]]></script>
+              -->
+            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+            <payloadFactory media-type="xml">
+                <format>
+                    <jsonObject>
+                        <a>1</a>
+                    </jsonObject>
+                </format>
+                <args/>
+            </payloadFactory>
+            <log level="custom">
+                <property expression="json-eval($.)" name="json-eval_before"/>
+            </log>
+            <script language="js"><![CDATA[mc.setProperty('localName', mc.getEnvelope().getBody().getFirstElementLocalName());]]></script>
+            <log level="custom">
+                <property expression="$ctx:localName" name="LOCAL_NAME"/>
+            </log>
+            <script language="js"><![CDATA[mc.getEnvelope().getBody().getFirstElement().detach();]]></script>
+            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+            <!-- property action="remove" name="NO_ENTITY_BODY" scope="axis2"/>  -->
+            <call>
+                <endpoint>
+                    <http uri-template="http://localhost:8123/"/>
+                </endpoint>
+            </call>
+            <log level="custom">
+                <property expression="json-eval($.)" name="json-eval_after"/>
+            </log>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <!-- script language="js"><![CDATA[mc.setProperty('mybody_json',mc.getPayloadJSON()..text.toString());]]></script> -->
+            <log level="custom">
+                <property name="banner" value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <property expression="get-property( 'mybody')" name="asd"/>
+                <property expression="get-property( 'JSON_STREAM')" name="zxc"/>
+            </log>
+            <respond/>
+        </inSequence>
         <outSequence/>
         <faultSequence>
             <log level="full">
