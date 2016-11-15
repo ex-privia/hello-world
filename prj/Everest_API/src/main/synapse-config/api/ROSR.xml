@@ -2,6 +2,10 @@
 <api context="/everest" name="RORS" xmlns="http://ws.apache.org/ns/synapse">
     <resource methods="POST" url-mapping="/ROs">
         <inSequence>
+            <enrich>
+                <source clone="true" type="body"/>
+                <target property="BODY_FOR_RESOURCES" type="property"/>
+            </enrich>
             <!--++
         				It is expected that the client calls this operation with this request:
         				
@@ -19,6 +23,13 @@
  						Please note: OneMoreRo, The Title, The Description are examples of ro name, title and description, and 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8 must be the real user token recognized bt the ro api
 						curl -v http://localhost:8280/everest/ROs -H "Content-Type: application/json" -H "Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8" -H "Slug: OneMoreRo" -d "{\"ro_title\": \"The Title\", \"ro_desc\": \"The Description\"}" 
         			 -->
+            <!-- spawn one more separate thread to aggregate resources (see below for the main thread) -->
+            <!--payloadFactory media-type="xml">
+                                                <format>
+                                                    <ms11:text xmlns:ms11="http://ws.apache.org/commons/ns/payload">MTIz</ms11:text>
+                                                </format>
+                                                <args/>
+                                            </payloadFactory-->
             <log level="custom">
                 <property name="mylog" value="***************************** RECEIVED REQUEST **************************"/>
                 <property expression="$trp:Authorization" name="auth"/>
@@ -110,59 +121,94 @@
                      -->
                     <!-- save Location http header of the response in RONAME property -->
                     <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
-                    <!-- save the url of the create RO needed in the response to the client -->
-                    <enrich>
-                        <source clone="true" xpath="get-property('RONAME')"/>
-                        <target property="LOCATION" type="property"/>
-                    </enrich>
-                    <!-- create the rdf xml for the title and the description that will be aggregated to the RO as an annotation -->
-                    <!-- from the former request body, values of ro_title and ro_desc fields are read into an rdf xml template -->
-                    <!-- (WSO2ESB) Note that I can still read the PayloadJSON from the mc even though with the previous access to the mc I deleted the payloadXML-->
-                    <script language="js"><![CDATA[var ro_title = mc.getPayloadJSON().ro_title.toString();
-	                    var ro_desc = mc.getPayloadJSON().ro_desc.toString();
-	                    var ro_name = mc.getProperty('RONAME');
-	                    mc.setPayloadXML(
-	                    	<rdf:RDF xmlns:roevo='http://purl.org/wf4ever/roevo#' xmlns:pavprov='http://purl.org/pav/provenance/2.0/' xmlns:ore-owl='http://purl.org/wf4ever/ore-owl' xmlns:ao='http://purl.org/ao/' xmlns:skos='http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf' xmlns:prov='http://www.w3.org/ns/prov#' xmlns:wfdesc='http://purl.org/wf4ever/wfdesc#' xmlns:pav='http://purl.org/pav/2.0/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:ro='http://purl.org/wf4ever/ro#' xmlns:roterms='http://purl.org/wf4ever/roterms#' xmlns:foaf='http://xmlns.com/foaf/0.1/' xmlns:wfprov='http://purl.org/wf4ever/wfprov#' xmlns:dct='http://purl.org/dc/terms/' xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:pavauth='http://purl.org/pav/authoring/2.0/' xmlns:wf4ever='http://purl.org/wf4ever/wf4ever#' xmlns:aocore='http://purl.org/ao/core/' > <rdf:Description rdf:about=''> <dct:title rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_title}</dct:title> <dct:description rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_desc}</dct:description> </rdf:Description> </rdf:RDF>
-	                    );]]></script>
-                    <log level="custom">
-                        <property name="mylog" value="***************************** RDFXML rendered **************************"/>
-                    </log>
-                    <!-- remove Location header coming from previous response -->
-                    <property action="remove" name="Location" scope="transport"/>
-                    <!-- choose the xml formatter -->
-                    <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
-                    <!-- set headers -->
-                    <property name="Content-Type" scope="transport" type="STRING" value="application/rdf+xml"/>
-                    <property name="Slug" scope="transport" type="STRING" value="title.rdf"/>
-                    <!-- (WSO2ESB) I really do not know why I can't use $trp:Location instead of get-property('RONAME') -->
-                    <property expression="fn:concat('&lt;', get-property('RONAME'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
-                    <log level="custom">
-                        <property name="mylog" value="*********************** CALL: AGGREGATE A RESOURCE ********************"/>
-                        <property expression="get-property('transport', 'Link')" name="TheLink"/>
-                    </log>
-                    <!-- call the annotation operation on the ro api -->
-                    <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
-                    <call>
-                        <endpoint>
-                            <http uri-template="{uri.var.location}"/>
-                        </endpoint>
-                    </call>
+                    <!-- spawn a separate thread to aggregate annotations (see below for the main thread) -->
+                    <clone continueParent="true">
+                        <target>
+                            <sequence>
+                                <log level="custom">
+                                    <property name="mylog" value="***************************** ITERATING OVER INTERNAL RESOURCES **************************"/>
+                                    <property expression="json-eval($.)" name="body"/>
+                                </log>
+                                <iterate continueParent="true" expression="$ctx:BODY_FOR_RESOURCES//internal/*">
+                                    <target>
+                                        <sequence>
+                                            <property expression="base64Decode('MTIz')" name="decoded" scope="default" type="STRING"/>
+                                            <script language="js"><![CDATA[var fileName = mc.getEnvelope().getBody().getFirstElementLocalName();
+												mc.setProperty("fileName", fileName);
+												var fileContent = mc.getEnvelope().getBody().getFirstElement().getText();
+							                    var decoded = new java.lang.String( org.apache.axiom.util.base64.Base64Utils.decode( fileContent));
+							                    mc.setPayloadXML(
+                                                    <ms11:text xmlns:ms11="http://ws.apache.org/commons/ns/payload">{decoded}</ms11:text>
+							                    );]]></script>
+                                            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                                            <property name="messageType" scope="axis2" type="STRING" value="text/plain"/>
+                                            <property name="ContentType" scope="axis2" type="STRING" value="application/octet-stream"/>
+                                            <header name="Content-Type" scope="transport" value="application/octet-stream"/>
+                                            <property name="Transfer-Encoding" scope="transport" type="STRING" value="base64"/>
+                                            <property expression="get-property('fileName')" name="Slug" scope="transport" type="STRING"/>
+                                            <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <log level="custom">
+                                                <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE RESOURCE **************************"/>
+                                            </log>
+                                            <call>
+                                                <endpoint>
+                                                    <http uri-template="{uri.var.location}"/>
+                                                </endpoint>
+                                            </call>
+                                        </sequence>
+                                    </target>
+                                </iterate>
+                                <!-- create the rdf xml for the title and the description that will be aggregated to the RO as an annotation -->
+                                <!-- from the former request body, values of ro_title and ro_desc fields are read into an rdf xml template -->
+                                <!-- (WSO2ESB) Note that I can still read the PayloadJSON from the mc even though with the previous access to the mc I deleted the payloadXML-->
+                                <script language="js"><![CDATA[var ro_title = mc.getPayloadJSON().ro_title.toString();
+				                    var ro_desc = mc.getPayloadJSON().ro_desc.toString();
+				                    var ro_name = mc.getProperty('RONAME');
+				                    mc.setPayloadXML(
+				                    	<rdf:RDF xmlns:roevo='http://purl.org/wf4ever/roevo#' xmlns:pavprov='http://purl.org/pav/provenance/2.0/' xmlns:ore-owl='http://purl.org/wf4ever/ore-owl' xmlns:ao='http://purl.org/ao/' xmlns:skos='http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf' xmlns:prov='http://www.w3.org/ns/prov#' xmlns:wfdesc='http://purl.org/wf4ever/wfdesc#' xmlns:pav='http://purl.org/pav/2.0/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:ro='http://purl.org/wf4ever/ro#' xmlns:roterms='http://purl.org/wf4ever/roterms#' xmlns:foaf='http://xmlns.com/foaf/0.1/' xmlns:wfprov='http://purl.org/wf4ever/wfprov#' xmlns:dct='http://purl.org/dc/terms/' xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:pavauth='http://purl.org/pav/authoring/2.0/' xmlns:wf4ever='http://purl.org/wf4ever/wf4ever#' xmlns:aocore='http://purl.org/ao/core/' > <rdf:Description rdf:about=''> <dct:title rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_title}</dct:title> <dct:description rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_desc}</dct:description> </rdf:Description> </rdf:RDF>
+				                    );]]></script>
+                                <log level="custom">
+                                    <property name="mylog" value="***************************** ANNOTATION RDFXML rendered **************************"/>
+                                </log>
+                                <!-- remove Location header coming from previous response -->
+                                <property action="remove" name="Location" scope="transport"/>
+                                <!-- choose the xml formatter -->
+                                <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+                                <!-- set headers -->
+                                <property name="Content-Type" scope="transport" type="STRING" value="application/rdf+xml"/>
+                                <property name="Slug" scope="transport" type="STRING" value="title.rdf"/>
+                                <property expression="fn:concat('&lt;', get-property('RONAME'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
+                                <log level="custom">
+                                    <property name="mylog" value="*********************** CALLING BACK END: AGGREGATE ANNOTATIONS ********************"/>
+                                    <property expression="get-property('transport', 'Link')" name="TheLink"/>
+                                </log>
+                                <!-- call the annotation operation on the ro api -->
+                                <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+                                <call>
+                                    <endpoint>
+                                        <http uri-template="{uri.var.location}"/>
+                                    </endpoint>
+                                </call>
+                            </sequence>
+                        </target>
+                    </clone>
+                    <!-- main thread replying to the client without waiting for the response by the aggregation call -->
                     <!-- no http header must be set explicitly. Those coming from the response of the preceding call must be removed -->
                     <!-- (WSO2ESB) There is no way to delete multiple headers with the same field name, indeed one is left from the previous response from roAPI to the next to the client: Link: <http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/>; rel="http://purl.org/ao/annotatesResource"-->
                     <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
                     <!-- next directive is to avoid using Transfer-Encoding: chunked -->
                     <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
-                    <log level="custom">
-                        <property expression="$trp:Link" name="************"/>
-                    </log>
                     <!-- set the json payload -->
                     <payloadFactory media-type="json">
                         <format>{"ro_name":"$1"}</format>
                         <args>
-                            <arg evaluator="xml" expression="get-property('LOCATION')"/>
+                            <arg evaluator="xml" expression="get-property('RONAME')"/>
                         </args>
                     </payloadFactory>
                     <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                    <log level="custom">
+                        <property name="mylog" value="*********************** REPLYING TO THE CLIENT ********************"/>
+                    </log>
                     <respond/>
                 </then>
                 <else>
@@ -337,6 +383,87 @@
                 <property expression="get-property( 'mybody')" name="asd"/>
                 <property expression="get-property( 'JSON_STREAM')" name="zxc"/>
             </log>
+            <respond/>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/wiretap">
+        <inSequence>
+            <clone continueParent="true">
+                <target>
+                    <sequence>
+                        <log level="custom">
+                            <property expression="$ctx:body" name="banner"/>
+                        </log>
+                        <call>
+                            <endpoint>
+                                <http uri-template="http://localhost:8123/wiretapped"/>
+                            </endpoint>
+                        </call>
+                    </sequence>
+                </target>
+            </clone>
+            <call>
+                <endpoint>
+                    <http uri-template="http://localhost:8123/main"/>
+                </endpoint>
+            </call>
+            <respond/>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/plain">
+        <inSequence>
+            <payloadFactory media-type="xml">
+                <format>
+                    <ms11:text xmlns:ms11="http://ws.apache.org/commons/ns/payload">MTIz</ms11:text>
+                </format>
+                <args/>
+            </payloadFactory>
+            <property name="messageType" scope="axis2" type="STRING" value="application/octet-stream"/>
+            <call>
+                <endpoint>
+                    <http uri-template="http://localhost:8123/"/>
+                </endpoint>
+            </call>
+            <respond/>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/iterate">
+        <inSequence>
+            <iterate expression="//internal/*">
+                <target>
+                    <sequence>
+                        <script language="js"><![CDATA[var elementName = mc.getEnvelope().getBody().getFirstElementLocalName();
+        				mc.setProperty( "elementName", elementName);]]></script>
+                        <log level="custom">
+                            <property expression="get-property('elementName')" name="--------------------"/>
+                        </log>
+                    </sequence>
+                </target>
+            </iterate>
             <respond/>
         </inSequence>
         <outSequence/>
