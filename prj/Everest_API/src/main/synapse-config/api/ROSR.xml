@@ -54,7 +54,7 @@
             <!-- next directive is needed in order to not block the POST request containing no body -->
             <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
             <!-- No directive is needed to set Slug and Authorization header parameters because they are exactly equal to those coming from the request  -->
-            <!-- next two directives are needed to empty the body for the next call to rohub: I do not know how to empty a json body, so I transorm it in xml -->
+            <!-- next two directives are needed to empty the body for the next call to rohub: I do not know how to empty a json body, so I transform it in xml -->
             <!-- transform the body format from json to xml -->
             <!-- (WSO2ESB) really speaking, here it is creating a new xml property of the mc containing the xml tree of the request body, in addition to the json tree-->
             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
@@ -127,12 +127,10 @@
                             <sequence>
                                 <log level="custom">
                                     <property name="mylog" value="***************************** ITERATING OVER INTERNAL RESOURCES **************************"/>
-                                    <property expression="json-eval($.)" name="body"/>
                                 </log>
                                 <iterate continueParent="true" expression="$ctx:BODY_FOR_RESOURCES//internal/*">
                                     <target>
                                         <sequence>
-                                            <property expression="base64Decode('MTIz')" name="decoded" scope="default" type="STRING"/>
                                             <script language="js"><![CDATA[var fileName = mc.getEnvelope().getBody().getFirstElementLocalName();
 												mc.setProperty("fileName", fileName);
 												var fileContent = mc.getEnvelope().getBody().getFirstElement().getText();
@@ -148,7 +146,32 @@
                                             <property expression="get-property('fileName')" name="Slug" scope="transport" type="STRING"/>
                                             <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
                                             <log level="custom">
-                                                <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE RESOURCE **************************"/>
+                                                <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE INTERNAL RESOURCE **************************"/>
+                                            </log>
+                                            <call>
+                                                <endpoint>
+                                                    <http uri-template="{uri.var.location}"/>
+                                                </endpoint>
+                                            </call>
+                                        </sequence>
+                                    </target>
+                                </iterate>
+                                <log level="custom">
+                                    <property name="mylog" value="***************************** ITERATING OVER EXTERNAL RESOURCES **************************"/>
+                                </log>
+                                <iterate continueParent="true" expression="$ctx:BODY_FOR_RESOURCES//external">
+                                    <target>
+                                        <sequence>
+                                            <script language="js"><![CDATA[var uri = mc.getEnvelope().getBody().getFirstElement().getText();
+												var proxy = <rdf:RDF xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'> <ore:Proxy> <ore:proxyFor rdf:resource={uri}/> </ore:Proxy> </rdf:RDF>;
+							                    mc.setPayloadXML( proxy);]]></script>
+                                            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                                            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+                                            <property name="ContentType" scope="axis2" type="STRING" value="application/vnd.wf4ever.proxy"/>
+                                            <header name="Content-Type" scope="transport" value="application/vnd.wf4ever.proxy"/>
+                                            <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <log level="custom">
+                                                <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE EXTERNAL RESOURCE **************************"/>
                                             </log>
                                             <call>
                                                 <endpoint>
