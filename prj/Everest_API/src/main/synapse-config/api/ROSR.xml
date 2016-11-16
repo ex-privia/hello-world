@@ -6,6 +6,7 @@
                 <source clone="true" type="body"/>
                 <target property="BODY_FOR_RESOURCES" type="property"/>
             </enrich>
+            <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
             <!--++
         				It is expected that the client calls this operation with this request:
         				
@@ -69,12 +70,36 @@
                     <http uri-template="http://sandbox.wf4ever-project.org/rodl/"/>
                 </endpoint>
             </call>
+            <!-- save Location http header of the response in RONAME property -->
+            <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
             <filter regex="201" source="get-property('axis2', 'HTTP_SC')">
                 <then>
                     <log level="custom">
                         <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
                         <property expression="$trp:Location" name="LOCATION"/>
                     </log>
+                    <filter regex="PUBLIC" source="$ctx:BODY_FOR_RESOURCES//mode">
+                        <then/>
+                        <else>
+                            <payloadFactory media-type="json">
+                                <format>
+						    {"ro":"$1","mode":"$2"}
+						</format>
+                                <args>
+                                    <arg evaluator="xml" expression="get-property('RONAME')"/>
+                                    <arg evaluator="xml" expression="$ctx:BODY_FOR_RESOURCES//mode"/>
+                                </args>
+                            </payloadFactory>
+                            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                            <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                            <call>
+                                <endpoint>
+                                    <http uri-template="http://sandbox.wf4ever-project.org/rodl/accesscontrol/modes/"/>
+                                </endpoint>
+                            </call>
+                        </else>
+                    </filter>
                     <!--++
                         Let's call the RO API to annotate the just created RO with title and description (see REQUEST below), and let's reply to the client (see RESPONSE below).
 
@@ -119,8 +144,6 @@
 					
 						Please note that ro_name field value in the json body must be the url given by the value of the Location http header in the response of the previous call to the RO API for the annotation.
                      -->
-                    <!-- save Location http header of the response in RONAME property -->
-                    <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
                     <!-- spawn a separate thread to aggregate annotations (see below for the main thread) -->
                     <clone continueParent="true">
                         <target>
@@ -487,6 +510,27 @@
                     </sequence>
                 </target>
             </iterate>
+            <respond/>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" url-mapping="/filter">
+        <inSequence>
+            <filter regex="ok" source="json-eval($.ro_vrc)">
+                <then>
+                    <log level="custom">
+                        <property name="OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" value="OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"/>
+                    </log>
+                </then>
+                <else/>
+            </filter>
             <respond/>
         </inSequence>
         <outSequence/>
