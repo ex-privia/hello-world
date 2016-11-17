@@ -72,6 +72,10 @@
             </call>
             <!-- save Location http header of the response in RONAME property -->
             <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
+            <script language="js"><![CDATA[//
+            	var urldecoded = decodeURIComponent( mc.getProperty("RONAME"));
+            	mc.setProperty("LOCATION", urldecoded);
+            //]]></script>
             <filter regex="201" source="get-property('axis2', 'HTTP_SC')">
                 <then>
                     <log level="custom">
@@ -182,7 +186,7 @@
                                             <header name="Content-Type" scope="transport" value="application/octet-stream"/>
                                             <property name="Transfer-Encoding" scope="transport" type="STRING" value="base64"/>
                                             <property expression="get-property('fileName')" name="Slug" scope="transport" type="STRING"/>
-                                            <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
                                             <log level="custom">
                                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE INTERNAL RESOURCE **************************"/>
                                             </log>
@@ -207,7 +211,7 @@
                                             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
                                             <property name="ContentType" scope="axis2" type="STRING" value="application/vnd.wf4ever.proxy"/>
                                             <header name="Content-Type" scope="transport" value="application/vnd.wf4ever.proxy"/>
-                                            <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
                                             <log level="custom">
                                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE EXTERNAL RESOURCE **************************"/>
                                             </log>
@@ -245,7 +249,7 @@
                                     <property expression="get-property('transport', 'Link')" name="TheLink"/>
                                 </log>
                                 <!-- call the annotation operation on the ro api -->
-                                <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+                                <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
                                 <call>
                                     <endpoint>
                                         <http uri-template="{uri.var.location}"/>
@@ -284,6 +288,40 @@
         </inSequence>
         <outSequence/>
         <faultSequence/>
+    </resource>
+    <resource methods="POST" url-mapping="/sparql">
+        <inSequence>
+            <log level="custom">
+                <property name="mylog" value="***************************** RECEIVED REQUEST FROM THE CLIENT **************************"/>
+            </log>
+            <!-- choose the xml formatter -->
+            <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+            <!-- set headers -->
+            <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
+            <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
+            <log level="custom">
+                <property name="mylog" value="*********************** CALLING BACK END: SPARQL ********************"/>
+            </log>
+            <!-- call the annotation operation on the ro api -->
+            <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+            <script language="js"><![CDATA[//
+				var query = "				";
+				mc.setPayloadXML( <params xmlns=""><query>{query}</query></text>);
+			//]]></script>
+            <call>
+                <endpoint>
+                    <http uri-template="{uri.var.location}"/>
+                </endpoint>
+            </call>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+        </faultSequence>
     </resource>
     <resource methods="POST" url-mapping="/second">
         <inSequence/>
