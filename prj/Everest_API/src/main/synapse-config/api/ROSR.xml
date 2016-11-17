@@ -78,28 +78,43 @@
                         <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
                         <property expression="$trp:Location" name="LOCATION"/>
                     </log>
-                    <filter regex="PUBLIC" source="$ctx:BODY_FOR_RESOURCES//mode">
-                        <then/>
-                        <else>
-                            <payloadFactory media-type="json">
-                                <format>
+                    <clone continueParent="true">
+                        <target>
+                            <sequence>
+                                <filter xpath="$ctx:BODY_FOR_RESOURCES//mode">
+                                    <then>
+                                        <filter regex="PUBLIC" source="$ctx:BODY_FOR_RESOURCES//mode">
+                                            <then/>
+                                            <else>
+                                                <log level="custom">
+                                                    <property name="mylog" value="***************************** CALLING BACK END: SETTING ACCESS RIGHT **************************"/>
+                                                    <property expression="$trp:Location" name="LOCATION"/>
+                                                </log>
+                                                <payloadFactory media-type="json">
+                                                    <format>
 						    {"ro":"$1","mode":"$2"}
 						</format>
-                                <args>
-                                    <arg evaluator="xml" expression="get-property('RONAME')"/>
-                                    <arg evaluator="xml" expression="$ctx:BODY_FOR_RESOURCES//mode"/>
-                                </args>
-                            </payloadFactory>
-                            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
-                            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
-                            <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
-                            <call>
-                                <endpoint>
-                                    <http uri-template="http://sandbox.wf4ever-project.org/rodl/accesscontrol/modes/"/>
-                                </endpoint>
-                            </call>
-                        </else>
-                    </filter>
+                                                    <args>
+                                                        <arg evaluator="xml" expression="get-property('RONAME')"/>
+                                                        <arg evaluator="xml" expression="$ctx:BODY_FOR_RESOURCES//mode"/>
+                                                    </args>
+                                                </payloadFactory>
+                                                <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                                                <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                                                <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                                                <call>
+                                                    <endpoint>
+                                                        <http uri-template="http://sandbox.wf4ever-project.org/rodl/accesscontrol/modes/"/>
+                                                    </endpoint>
+                                                </call>
+                                            </else>
+                                        </filter>
+                                    </then>
+                                    <else/>
+                                </filter>
+                            </sequence>
+                        </target>
+                    </clone>
                     <!--++
                         Let's call the RO API to annotate the just created RO with title and description (see REQUEST below), and let's reply to the client (see RESPONSE below).
 
@@ -212,7 +227,7 @@
 				                    var ro_vrc = mc.getPayloadJSON().ro_vrc.toString();
 				                    var ro_name = mc.getProperty('RONAME');
 				                    mc.setPayloadXML(
-				                    	<rdf:RDF xmlns:acs="http://www.acsys.it/everest/" xmlns:roevo='http://purl.org/wf4ever/roevo#' xmlns:pavprov='http://purl.org/pav/provenance/2.0/' xmlns:ore-owl='http://purl.org/wf4ever/ore-owl' xmlns:ao='http://purl.org/ao/' xmlns:skos='http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf' xmlns:prov='http://www.w3.org/ns/prov#' xmlns:wfdesc='http://purl.org/wf4ever/wfdesc#' xmlns:pav='http://purl.org/pav/2.0/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:ro='http://purl.org/wf4ever/ro#' xmlns:roterms='http://purl.org/wf4ever/roterms#' xmlns:foaf='http://xmlns.com/foaf/0.1/' xmlns:wfprov='http://purl.org/wf4ever/wfprov#' xmlns:dct='http://purl.org/dc/terms/' xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:pavauth='http://purl.org/pav/authoring/2.0/' xmlns:wf4ever='http://purl.org/wf4ever/wf4ever#' xmlns:aocore='http://purl.org/ao/core/' > <rdf:Description rdf:about=''> <dct:title rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_title}</dct:title> <dct:description rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_desc}</dct:description> <acs:vrc rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_vrc}</acs:vrc>  </rdf:Description> </rdf:RDF>
+				                    	<rdf:RDF xmlns:acs="http://www.acsys.it/everest#" xmlns:roevo='http://purl.org/wf4ever/roevo#' xmlns:pavprov='http://purl.org/pav/provenance/2.0/' xmlns:ore-owl='http://purl.org/wf4ever/ore-owl' xmlns:ao='http://purl.org/ao/' xmlns:skos='http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf' xmlns:prov='http://www.w3.org/ns/prov#' xmlns:wfdesc='http://purl.org/wf4ever/wfdesc#' xmlns:pav='http://purl.org/pav/2.0/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:ro='http://purl.org/wf4ever/ro#' xmlns:roterms='http://purl.org/wf4ever/roterms#' xmlns:foaf='http://xmlns.com/foaf/0.1/' xmlns:wfprov='http://purl.org/wf4ever/wfprov#' xmlns:dct='http://purl.org/dc/terms/' xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:pavauth='http://purl.org/pav/authoring/2.0/' xmlns:wf4ever='http://purl.org/wf4ever/wf4ever#' xmlns:aocore='http://purl.org/ao/core/' > <rdf:Description rdf:about=''> <dct:title rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_title}</dct:title> <dct:description rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_desc}</dct:description> <acs:vrc rdf:datatype='http://www.w3.org/2001/XMLSchema#string'>{ro_vrc}</acs:vrc>  </rdf:Description> </rdf:RDF>
 				                    );]]></script>
                                 <log level="custom">
                                     <property name="mylog" value="***************************** ANNOTATION RDFXML rendered **************************"/>
