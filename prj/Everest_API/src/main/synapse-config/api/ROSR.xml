@@ -377,6 +377,10 @@
 				if( 'ro' in payloadJSON){
 					ro = "FILTER regex( str( ?ro), \"" + payloadJSON.ro + "\", \"i\")";
 				}
+				var orderBy = "ORDER BY ?title ?created ?creator ?ro ?description ?vrc ?status";
+				if( 'orderBy' in payloadJSON){
+					orderBy = "ORDER BY " + payloadJSON.orderBy;
+				}
 				var query = "\
 				PREFIX dct: <http://purl.org/dc/terms/>\
 				PREFIX dcterms: <http://purl.org/dc/terms/>\
@@ -401,7 +405,7 @@
 					+ creator
 					+ status
 					+ ro
-				+ " }"
+				+ " } " + orderBy
 				;
 				// FILTER regex( str( ?x), \"Pack\")\
 				mc.setProperty("QUERY", query);
