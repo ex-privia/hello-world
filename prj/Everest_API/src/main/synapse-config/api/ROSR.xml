@@ -289,6 +289,42 @@
         <outSequence/>
         <faultSequence/>
     </resource>
+    <resource methods="POST" url-mapping="/">
+        <inSequence>
+            <enrich>
+                <source clone="true" type="body"/>
+                <target property="BODY" type="property"/>
+            </enrich>
+            <iterate continueParent="true" expression="$ctx:BODY//ROs">
+                <target>
+                    <sequence>
+                        <script language="js"><![CDATA[//
+							var ro = mc.getEnvelope().getBody().getFirstElement().getText();
+							mc.setProperty("RO", ro);
+							//]]></script>
+                        <property expression="get-property('RO')" name="uri.var.ro" scope="default" type="STRING"/>
+                        <call>
+                            <endpoint>
+                                <http method="delete" uri-template="{uri.var.ro}"/>
+                            </endpoint>
+                        </call>
+                    </sequence>
+                </target>
+            </iterate>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="204"/>
+            <respond/>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <log level="full">
+                <property name="MESSAGE" value="Executing default sequence"/>
+                <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+            </log>
+            <send/>
+        </faultSequence>
+    </resource>
     <resource methods="POST" url-mapping="/sparql">
         <inSequence>
             <log level="custom">
