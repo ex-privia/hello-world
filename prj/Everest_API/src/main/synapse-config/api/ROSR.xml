@@ -187,6 +187,7 @@
                                             <property name="Transfer-Encoding" scope="transport" type="STRING" value="base64"/>
                                             <property expression="get-property('fileName')" name="Slug" scope="transport" type="STRING"/>
                                             <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                                             <log level="custom">
                                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE INTERNAL RESOURCE **************************"/>
                                             </log>
@@ -212,6 +213,7 @@
                                             <property name="ContentType" scope="axis2" type="STRING" value="application/vnd.wf4ever.proxy"/>
                                             <header name="Content-Type" scope="transport" value="application/vnd.wf4ever.proxy"/>
                                             <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                                             <log level="custom">
                                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE EXTERNAL RESOURCE **************************"/>
                                             </log>
@@ -243,6 +245,7 @@
                                 <!-- set headers -->
                                 <property name="Content-Type" scope="transport" type="STRING" value="application/rdf+xml"/>
                                 <property name="Slug" scope="transport" type="STRING" value="title.rdf"/>
+                                <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                                 <property expression="fn:concat('&lt;', get-property('RONAME'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                                 <log level="custom">
                                     <property name="mylog" value="*********************** CALLING BACK END: AGGREGATE ANNOTATIONS ********************"/>
