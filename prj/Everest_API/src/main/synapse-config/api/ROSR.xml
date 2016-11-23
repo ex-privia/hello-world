@@ -116,6 +116,7 @@
                                     </then>
                                     <else/>
                                 </filter>
+                                <drop/>
                             </sequence>
                         </target>
                     </clone>
@@ -196,6 +197,7 @@
                                                     <http uri-template="{uri.var.location}"/>
                                                 </endpoint>
                                             </call>
+                                            <drop/>
                                         </sequence>
                                     </target>
                                 </iterate>
@@ -222,6 +224,7 @@
                                                     <http uri-template="{uri.var.location}"/>
                                                 </endpoint>
                                             </call>
+                                            <drop/>
                                         </sequence>
                                     </target>
                                 </iterate>
@@ -258,6 +261,7 @@
                                         <http uri-template="{uri.var.location}"/>
                                     </endpoint>
                                 </call>
+                                <drop/>
                             </sequence>
                         </target>
                     </clone>
@@ -355,23 +359,33 @@
 					if( 'ro' in payloadJSON){
 						ro = payloadJSON.ro;
 					}
+					var orderBy = "ORDER BY ?created ?resource ?creator ?type";
+					if( 'orderBy' in payloadJSON){
+						orderBy = "ORDER BY " + payloadJSON.orderBy;
+					}
 					query = "\
 						PREFIX ore: <http://www.openarchives.org/ore/terms/>\
 						PREFIX  ao:    <http://purl.org/ao/>\
 						PREFIX dct: <http://purl.org/dc/terms/>\
-						PREFIX xsd: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\
 						PREFIX ro: <http://purl.org/wf4ever/ro#>\
-						SELECT ?resource ?type\
+						SELECT ?resource ?creator ?created ?name ?filesize ?type ?proxy\
 						WHERE {\
-						<" + ro + "> ore:aggregates ?resource .\
-						OPTIONAL { ?resource xsd:type ?type\
+						<" + ro + "> ore:isDescribedBy ?graph ;\
+									 ore:aggregates ?resource .\
+						OPTIONAL { ?resource ro:name ?name}\
+						OPTIONAL { ?resource ro:filesize ?filesize}\
+						OPTIONAL { ?resource a ?type\
 						FILTER ( ?type != ore:AggregatedResource)\
 						FILTER ( ?type != ro:Resource)\
 						}\
-						FILTER NOT EXISTS { [ a ao:Annotation] ao:body ?resource}\
-						FILTER NOT EXISTS { ?resource a ao:Annotation}\
-						} ORDER BY ?resource"
-					;
+						GRAPH ?graph{\
+							?resource a ro:Resource .\
+							OPTIONAL { ?resource dct:creator ?creator}\
+							OPTIONAL { ?resource dct:created ?created}\
+							?proxy ore:proxyFor ?resource\
+							} \
+						} " + orderBy + "\
+					";
 				}else{
 					var vrc = "";
 					if( 'vrc' in payloadJSON){
