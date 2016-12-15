@@ -67,7 +67,7 @@
             </log>
             <call>
                 <endpoint>
-                    <http uri-template="http://www.rohub.org/rodl/"/>
+                    <http uri-template="http://sandbox.rohub.org/rodl/"/>
                 </endpoint>
             </call>
             <!-- save Location http header of the response in RONAME property -->
@@ -108,7 +108,7 @@
                                                 <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                                                 <call>
                                                     <endpoint>
-                                                        <http uri-template="http://www.rohub.org/rodl/accesscontrol/modes/"/>
+                                                        <http uri-template="http://sandbox.rohub.org/rodl/accesscontrol/modes/"/>
                                                     </endpoint>
                                                 </call>
                                             </else>
@@ -462,7 +462,7 @@
             </log>
             <call>
                 <endpoint>
-                    <http uri-template="http://www.rohub.org/rodl/"/>
+                    <http uri-template="http://sandbox.rohub.org/rodl/"/>
                 </endpoint>
             </call>
             <respond/>
@@ -480,7 +480,7 @@
         <inSequence>
             <call>
                 <endpoint>
-                    <http uri-template="http://www.rohub.org/rodl"/>
+                    <http uri-template="http://sandbox.rohub.org/rodl"/>
                 </endpoint>
             </call>
             <respond/>
