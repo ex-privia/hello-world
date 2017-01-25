@@ -2,6 +2,13 @@
 <api context="/everest" name="RORS" xmlns="http://ws.apache.org/ns/synapse">
     <resource methods="POST" url-mapping="/ROs">
         <inSequence>
+            <!-- get the name of the first element child of  the context root. -->
+            <!--
+	                                        create the xml body:
+	                                        a. get and put in the variable "url" the text node of the only element under the context root "$ctx:BODY_FOR_RESOURCES//external", that is array item of the field "external" corresponding to the current iteration (getFirstElement would do get this element because it is the only element)
+	                                        b. create an xml string "proxy" with an xml template where the "url" variable value is substituted with the sintax {url}
+	                                        c. set the http request body with the value of the variable "proxy" through setPayloadXML
+	                                        -->
             <enrich>
                 <source clone="true" type="body"/>
                 <target property="BODY_FOR_RESOURCES" type="property"/>
@@ -12,17 +19,23 @@
         				
 						POST /everest/ROs HTTP/1.1
 						Host: localhost:8280
-						User-Agent: curl/7.49.1
-						Accept: */*
 						Content-Type: application/json
 						Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
-						Slug: OneMoreRo
-						Content-Length: 55
+						Slug: cde
+						Content-Length: 243
 						
-						{"ro_title": "The Title", "ro_desc": "The Description"} 
+						{"ro_title": "The Title", "ro_desc": "The Description", "ro_vrc": "CNR", "internal": [{"myfolder/file1.txt": "MTIz"}, {"myfolder/file2.txt": "NDU2"}],"external": ["http://sdeg.com/resource1.html", "https://sdeg.it/res2.do"], "mode": "PRIVATE"}
 						
- 						Please note: OneMoreRo, The Title, The Description are examples of ro name, title and description, and 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8 must be the real user token recognized bt the ro api
-						curl -v http://localhost:8280/everest/ROs -H "Content-Type: application/json" -H "Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8" -H "Slug: OneMoreRo" -d "{\"ro_title\": \"The Title\", \"ro_desc\": \"The Description\"}" 
+ 						Please note that the value of json fields in the http body are only examples. Read EverestAPI_interface_documentation_<version>.docx for details.
+						Using curl the corresponding command would be:
+						curl -v http://localhost:8280/everest/ROs -H "Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8" -H "Content-Type: application/json" -H "Slug: cde" -d "{\"ro_title\": \"The Title\", \"ro_desc\": \"The Description\", \"ro_vrc\": \"CNR\", \"internal\": [{\"myfolder/file1.txt\": \"MTIz\"}, {\"myfolder/file2.txt\": \"NDU2\"}],\"external\": [\"http://sdeg.com/resource1.html\", \"https://sdeg.it/res2.do\"], \"mode\": \"PRIVATE\"}"
+						
+						With this only invocation by the client, various invocations are performed to the rohub backend. Those are:
+						1. Creation of the RO with a given name, title, and description
+						2. Optional setting public/private visibility mode (access rights)
+						3. Optional aggregation of internal resources
+						4. Optional aggregation of external resources
+						5. Annotate the RO with the title, description, and VRC
         			 -->
             <!-- spawn one more separate thread to aggregate resources (see below for the main thread) -->
             <!--payloadFactory media-type="xml">
@@ -37,51 +50,83 @@
                 <property expression="$trp:Slug" name="slug"/>
             </log>
             <!--++
-                        Let's call the RO API for the creation of an RO.
+            			do the first invocation to the backend:
+            			1. Creation of the RO with a given name, title, and description
+            			
+                        The http request must be this (given the example client request above):
                         
-                    	I need to create a POST request to this url:
-                    	
-                    	http://sandbox.wf4ever-project.org/rodl/ROs/
-                    	
-                    	with header parameters like these:
-                    	 
-                        Slug: OneMoreRo
-						Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
-                        
-                        Please note that: OneMoreRo is an example of ro name, 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8 must be the real user token recognized by roAPI.
-                        
-                        The body of the POST request must be empty.
+	                        POST /rodl/ROs HTTP/1.1
+							Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+							Accept: */*
+							Slug: cde
+							Content-Type: application/xml
+							Transfer-Encoding: chunked
+							Host: sandbox.rohub.org
+							Connection: Keep-Alive
+							User-Agent: Synapse-PT-HttpComponents-NIO
+							
+							0
+							
+							Please note that the http body is empty; all information are contained in the http headers.
+							Please also note the synapse and therefore wso2esb works by "deltas": only differences between the outgoing requested and the incoming one are to be set.
                      -->
-            <!-- next directive is needed in order to not block the POST request containing no body -->
+            <!-- this is needed in order to not block the POST request containing no body -->
             <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
             <!-- No directive is needed to set Slug and Authorization header parameters because they are exactly equal to those coming from the request  -->
-            <!-- next two directives are needed to empty the body for the next call to rohub: I do not know how to empty a json body, so I transform it in xml -->
-            <!-- transform the body format from json to xml -->
+            <!-- next two directives (1.a and 1.b) are needed to empty the body for the next call to rohub: I do not know how to empty a json body, so I transform it in xml -->
+            <!-- 1.a: transform the body format from json to xml -->
             <!-- (WSO2ESB) really speaking, here it is creating a new xml property of the mc containing the xml tree of the request body, in addition to the json tree-->
             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
-            <!-- empty the payloadXML of the request through this script-->
+            <!-- 1.b: empty the payloadXML of the request through this script-->
             <!-- (WSO2ESB) the deletion of this xml tree does not affect the json object. Indeed the json object unaltered will be used next. (see below) -->
             <script language="js"><![CDATA[mc.getEnvelope().getBody().getFirstElement().detach();]]></script>
             <log level="custom">
                 <property name="mylog" value="***************************** CALL: CREATE A NEW RESEARCH OBJECT **************************"/>
             </log>
+            <!-- the request has been so synthesized and the back-end can be invoked right now -->
             <call>
                 <endpoint>
                     <http uri-template="http://sandbox.rohub.org/rodl/"/>
                 </endpoint>
             </call>
-            <!-- save Location http header of the response in RONAME property -->
+            <!-- The expected response is this:
+
+	            HTTP/1.1 201 Created
+				Date: Fri, 13 Jan 2017 14:50:55 GMT
+				Server: Apache
+				Location: http://sandbox.rohub.org/rodl/ROs/cde-20/
+				Content-disposition: attachment; filename=".ro/manifest.rdf
+				Content-Length: 4354
+				Keep-Alive: timeout=200, max=100
+				Connection: Keep-Alive
+				Content-Type: application/rdf+xml
+				
+				here the body (that is not needed)
+            
+             -->
+            <!-- save in a property (RONAME) the URI of the just created RO got in the Location http header of the response -->
             <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
             <script language="js"><![CDATA[//
             	var urldecoded = decodeURIComponent( mc.getProperty("RONAME"));
             	mc.setProperty("LOCATION", urldecoded);
             //]]></script>
+            <!-- keep on processing if the response status code is what is expected to be in case of correct back end response, that is 201 in this case.
+            In the else branch (now missing) exceptional response must be handled properly!
+            -->
             <filter regex="201" source="get-property('axis2', 'HTTP_SC')">
                 <then>
                     <log level="custom">
                         <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
                         <property expression="$trp:Location" name="LOCATION"/>
                     </log>
+                    <!--
+                    	do the next invocation to the backend, if there is a "mode" field in the client request:
+						2. Optional setting public/private visibility mode (access rights).
+                    	Next invocations are performed in parallel taking advantage of backend computing power, while at the same time, in order to minimize user-perceived latency, the user will receive the response to her request using just the info from the response of the first invocation to the back end.
+
+                    	So spawn a new execution thread for this invocation.
+
+                    -->
                     <clone continueParent="true">
                         <target>
                             <sequence>
@@ -94,6 +139,25 @@
                                                     <property name="mylog" value="***************************** CALLING BACK END: SETTING ACCESS RIGHT **************************"/>
                                                     <property expression="$trp:Location" name="LOCATION"/>
                                                 </log>
+                                                <!--
+                                                The url of the access control operation is http://sandbox.rohub.org/rodl/accesscontrol/modes/
+                                                The request of the access control operation must be this (given the example client request):
+                                                
+                                                	POST /rodl/accesscontrol/modes/ HTTP/1.1
+													Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+													Content-Type: application/json
+													Content-Length: 67
+													Host: sandbox.rohub.org
+													Connection: Keep-Alive
+													User-Agent: Synapse-PT-HttpComponents-NIO
+													
+													{"ro":"http://sandbox.rohub.org/rodl/ROs/cde-20/","mode":"PRIVATE"}
+													
+													
+													Please note that the value of the "ro" field in the body of the request must be the URI of the RO,
+													and the value of the "mode" field must be equal to the value of the "mode" field in the client request.
+                                                -->
+                                                <!-- Synthesize the body of the request with this template in "format" and assign variables through "args" directive -->
                                                 <payloadFactory media-type="json">
                                                     <format>
 						    {"ro":"$1","mode":"$2"}
@@ -103,9 +167,21 @@
                                                         <arg evaluator="xml" expression="$ctx:BODY_FOR_RESOURCES//mode"/>
                                                     </args>
                                                 </payloadFactory>
+                                                <!-- disable default http-transfer method for synapse (Transfer-Encoding: chunked) -->
                                                 <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                                                <!-- set ContentType http header field to "application/json" -->
                                                 <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                                                <!-- set Authorization http header field -->
                                                 <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                                                <!--  remaining http headers: Host, Connection, User-Agent, Content-Length are automatically set, so no more directive are needed. (Anyway they are not strictly needed by the back-end.) -->
+                                                <!-- please note that two more http headers will be sent to the back-end:
+                                                	Content-disposition: attachment; filename=".ro/manifest.rdf"
+													Location: http://sandbox.rohub.org/rodl/ROs/cde-20/
+													
+												This is because they have not been deleted from the context and they are there from the first response from the back-end.
+												Anyway, they are not dangerous, so no deletion is performed.
+                                                 -->
+                                                <!-- invoke the access control operation with the request just synthesized -->
                                                 <call>
                                                     <endpoint>
                                                         <http uri-template="http://sandbox.rohub.org/rodl/accesscontrol/modes/"/>
@@ -171,6 +247,29 @@
                                 <log level="custom">
                                     <property name="mylog" value="***************************** ITERATING OVER INTERNAL RESOURCES **************************"/>
                                 </log>
+                                <!--
+	                    		do the next set of invocations to the back-end:
+	                    			3. Optional aggregation of internal resources
+                                For all fields children of the "internal" field in the body of the client request, invoke the aggregation operation of the back-end.
+                                Given the example client request, internal resources to be aggregated are 2, because 2 are the fields children of the "internal" field : {"myfolder/file1.txt": "MTIz"}, {"myfolder/file2.txt": "NDU2"}
+                                For the first invocation of the aggregation operation, the http request to be synthesized is (for the other invocation it is analogous, only the Slug header and the body will be different):
+                                	
+                                	POST /rodl/ROs/cde-20/ HTTP/1.1
+									Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+									Slug: myfolder/file1.txt
+									Content-Type: application/octet-stream
+									Content-Length: 3
+									Host: sandbox.rohub.org
+									Connection: Keep-Alive
+									User-Agent: Synapse-PT-HttpComponents-NIO
+									
+									123
+									
+								Please note that the value of the Slug header is given by the name of the "internal" child field corresponding to each step of the iteration
+								Additionally, the body of the request is the content of the file to be aggregated.
+								It must be got by base64-decoding the value of the "internal" child field corresponding to each step of the iteration.
+								For example, for the first step of the iteration, the "internal" child field is "myfolder/file1.txt", whose value "MTIz", once decoded, gives "123".
+                                -->
                                 <iterate continueParent="true" expression="$ctx:BODY_FOR_RESOURCES//internal/*">
                                     <target>
                                         <sequence>
@@ -181,14 +280,27 @@
 							                    mc.setPayloadXML(
                                                     <ms11:text xmlns:ms11="http://ws.apache.org/commons/ns/payload">{decoded}</ms11:text>
 							                    );]]></script>
+                                            <!-- disable default http-transfer method for synapse (Transfer-Encoding: chunked) -->
                                             <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
                                             <property name="messageType" scope="axis2" type="STRING" value="text/plain"/>
+                                            <!-- set http request header Content-Type: application/octet-stream -->
                                             <property name="ContentType" scope="axis2" type="STRING" value="application/octet-stream"/>
                                             <header name="Content-Type" scope="transport" value="application/octet-stream"/>
                                             <property name="Transfer-Encoding" scope="transport" type="STRING" value="base64"/>
+                                            <!-- set http request header Slug to the filename got through the custom property filename set in the script directive above -->
                                             <property expression="get-property('fileName')" name="Slug" scope="transport" type="STRING"/>
+                                            <!-- set the property uri.var.location to the url of the operation, to be used in the next "call" directive -->
                                             <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
+                                            <!-- set http request header Authorization -->
                                             <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                                            <!-- the other headers are set automatically: Content-Length, Host, Connection, User-Agent -->
+                                            <!-- please note that two more http headers will be sent to the back-end:
+                                                	Content-disposition: attachment; filename=".ro/manifest.rdf"
+													Location: http://sandbox.rohub.org/rodl/ROs/cde-20/
+													
+												This is because they have not been deleted from the context and they are there from the first response from the back-end.
+												Anyway, they are not dangerous, so no deletion is performed.
+                                            -->
                                             <log level="custom">
                                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE INTERNAL RESOURCE **************************"/>
                                             </log>
@@ -197,25 +309,64 @@
                                                     <http uri-template="{uri.var.location}"/>
                                                 </endpoint>
                                             </call>
+                                            <!--
+                                            	Terminate here this message flow and discard the response, because it is of no use. (Possibly the response should be analyzed to handle errors)
+                                            -->
                                             <drop/>
                                         </sequence>
                                     </target>
+                                    <!-- after this "iterate" directive due to xPath expression terminating in "*" the root-->
                                 </iterate>
                                 <log level="custom">
                                     <property name="mylog" value="***************************** ITERATING OVER EXTERNAL RESOURCES **************************"/>
                                 </log>
+                                <!--
+	                    		do the next set of invocations to the back-end:
+	                    			4. Optional aggregation of external resources
+                                For all items in the "external" field in the body of the client request, invoke the aggregation operation of the back-end.
+                                Given the example client request, external resources to be aggregated are 2, because 2 are the items in the "external" field : ["http://sdeg.com/resource1.html", "https://sdeg.it/res2.do"]
+                                For the first invocation of the aggregation operation, the http request to be synthesized is (for the other invocation it is analogous, only the attribute rdf:resource in the xml body must be set accordingly):
+                                	
+									POST /rodl/ROs/cde-20/ HTTP/1.1
+									Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+									Content-Type: application/vnd.wf4ever.proxy
+									Content-Length: 222
+									Host: sandbox.rohub.org
+									Connection: Keep-Alive
+									User-Agent: Synapse-PT-HttpComponents-NIO
+									
+									<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:ore="http://www.openarchives.org/ore/terms/">
+									  <ore:Proxy>
+									    <ore:proxyFor rdf:resource="http://sdeg.com/resource1.html"/>
+									  </ore:Proxy>
+									</rdf:RDF>
+									
+								Please note that the value of the rdf:resource attribute in the xml body is given by the name of the "external" array item corresponding to each step of the iteration
+								For example, for the first step of the iteration, the "external" array item is "http://sdeg.com/resource1.html".
+ 
+                                -->
                                 <iterate continueParent="true" expression="$ctx:BODY_FOR_RESOURCES//external">
                                     <target>
                                         <sequence>
                                             <script language="js"><![CDATA[var uri = mc.getEnvelope().getBody().getFirstElement().getText();
 												var proxy = <rdf:RDF xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'> <ore:Proxy> <ore:proxyFor rdf:resource={uri}/> </ore:Proxy> </rdf:RDF>;
 							                    mc.setPayloadXML( proxy);]]></script>
+                                            <!-- disable default http-transfer method for synapse (Transfer-Encoding: chunked) -->
                                             <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
                                             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+                                            <!-- set http request header Content-Type: application/vnd.wf4ever.proxy -->
                                             <property name="ContentType" scope="axis2" type="STRING" value="application/vnd.wf4ever.proxy"/>
                                             <header name="Content-Type" scope="transport" value="application/vnd.wf4ever.proxy"/>
                                             <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
                                             <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                                            <!-- the other headers are set automatically: Content-Length, Host, Connection, User-Agent -->
+                                            <!-- please note that two more http headers will be sent to the back-end:
+                                                	Content-disposition: attachment; filename=".ro/manifest.rdf"
+													Location: http://sandbox.rohub.org/rodl/ROs/cde-20/
+													
+												This is because they have not been deleted from the context and they are there from the first response from the back-end.
+												Anyway, they are not dangerous, so no deletion is performed.
+                                            -->
                                             <log level="custom">
                                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE EXTERNAL RESOURCE **************************"/>
                                             </log>
@@ -224,12 +375,43 @@
                                                     <http uri-template="{uri.var.location}"/>
                                                 </endpoint>
                                             </call>
+                                            <!--
+                                            	Terminate here this message flow and discard the response, because it is of no use. (Possibly the response should be analyzed to handle errors)
+                                            -->
                                             <drop/>
                                         </sequence>
                                     </target>
                                 </iterate>
-                                <!-- create the rdf xml for the title and the description that will be aggregated to the RO as an annotation -->
-                                <!-- from the former request body, values of ro_title and ro_desc fields are read into an rdf xml template -->
+                                <!--
+	                                do the next set of invocations to the back-end:
+                    					5. Annotate the RO with the title, description, and VRC
+
+                                
+	                                Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+									Slug: title.rdf
+									Link: <http://sandbox.rohub.org/rodl/ROs/cde-20/>; rel="http://purl.org/ao/annotatesResource"
+									Content-Type: application/xml
+									Transfer-Encoding: chunked
+									Host: sandbox.rohub.org
+									Connection: Keep-Alive
+									User-Agent: Synapse-PT-HttpComponents-NIO
+									
+									4c9
+									<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:pavauth="http://purl.org/pav/authoring/2.0/" xmlns:ore="http://www.openarchives.org/ore/terms/" xmlns:wf4ever="http://purl.org/wf4ever/wf4ever#" xmlns:pav="http://purl.org/pav/2.0/" xmlns:roterms="http://purl.org/wf4ever/roterms#" xmlns:skos="http://www.w3.org/TR/skos-reference/skos-owl1-dl.rdf" xmlns:ao="http://purl.org/ao/" xmlns:acs="http://www.acsys.it/everest#" xmlns:dct="http://purl.org/dc/terms/" xmlns:ore-owl="http://purl.org/wf4ever/ore-owl" xmlns:wfprov="http://purl.org/wf4ever/wfprov#" xmlns:roevo="http://purl.org/wf4ever/roevo#" xmlns:aocore="http://purl.org/ao/core/" xmlns:pavprov="http://purl.org/pav/provenance/2.0/" xmlns:prov="http://www.w3.org/ns/prov#" xmlns:ro="http://purl.org/wf4ever/ro#" xmlns:wfdesc="http://purl.org/wf4ever/wfdesc#" xmlns:foaf="http://xmlns.com/foaf/0.1/">
+									  <rdf:Description rdf:about="">
+									    <dct:title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">The Title</dct:title>
+									    <dct:description rdf:datatype="http://www.w3.org/2001/XMLSchema#string">The Description</dct:description>
+									    <acs:vrc rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CNR</acs:vrc>
+									  </rdf:Description>
+									</rdf:RDF>
+									0
+								
+								Please note that the Slug header has been set to "title.rdf" and this value is embedded in the next block of directive. Its value is not important, it can be whatever.                                
+                                -->
+                                <!-- 
+                                    create the rdf xml for the title, the description and the VRC that will be aggregated to the RO as an annotation
+                                	from the former request body, values of ro_title, ro_desc and ro_vrc fields are read into an rdf xml template
+                                 -->
                                 <!-- (WSO2ESB) Note that I can still read the PayloadJSON from the mc even though with the previous access to the mc I deleted the payloadXML-->
                                 <script language="js"><![CDATA[var ro_title = mc.getPayloadJSON().ro_title.toString();
 				                    var ro_desc = mc.getPayloadJSON().ro_desc.toString();
@@ -250,6 +432,13 @@
                                 <property name="Slug" scope="transport" type="STRING" value="title.rdf"/>
                                 <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                                 <property expression="fn:concat('&lt;', get-property('RONAME'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
+                                <!-- the other headers are set automatically: Transfer-Encoding, Host, Connection, User-Agent -->
+                                <!-- please note that one more http header will be sent to the back-end:
+                                               	Content-disposition: attachment; filename=".ro/manifest.rdf"
+												
+									This is because it has not been deleted from the context and it is there from the first response from the back-end.
+									Anyway, it is not dangerous, so no deletion is performed.
+                                -->
                                 <log level="custom">
                                     <property name="mylog" value="*********************** CALLING BACK END: AGGREGATE ANNOTATIONS ********************"/>
                                     <property expression="get-property('transport', 'Link')" name="TheLink"/>
@@ -261,6 +450,9 @@
                                         <http uri-template="{uri.var.location}"/>
                                     </endpoint>
                                 </call>
+                                <!--
+                                	Terminate here this message flow and discard the response, because it is of no use. (Possibly the response should be analyzed to handle errors)
+                                -->
                                 <drop/>
                             </sequence>
                         </target>
