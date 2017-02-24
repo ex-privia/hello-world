@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="DeleteResourcesIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <log level="custom">
+        <property name="mylog" value="***************************** RECEIVED REQUEST FROM THE CLIENT **************************"/>
+    </log>
+    <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <clone continueParent="true">
+        <target>
+            <sequence>
+                <iterate continueParent="true" expression="$body//internal">
+                    <target>
+                        <sequence>
+                            <log level="custom">
+                                <property expression="string( .)" name="Trying to delete internal resource: "/>
+                            </log>
+                            <property expression="string(.)" name="uri.var.resource" scope="default" type="STRING"/>
+                            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+                            <call>
+                                <endpoint>
+                                    <http method="delete" uri-template="{uri.var.resource}"/>
+                                </endpoint>
+                            </call>
+                            <drop/>
+                        </sequence>
+                    </target>
+                </iterate>
+                <!--
+							PREFIX ore: <http://www.openarchives.org/ore/terms/>
+							PREFIX ro: <http://purl.org/wf4ever/ro#>
+							SELECT ?resource ?proxy
+							WHERE {
+								VALUES (?ro ?resource) { (<http://sandbox.rohub.org/rodl/ROs/123/> <http://www.google.com>) (<http://sandbox.rohub.org/rodl/ROs/123/> <http://sdeg.com/>)}
+								?ro ore:isDescribedBy ?graph.
+								GRAPH ?graph{
+									?proxy ore:proxyFor ?resource
+								} 
+							}
+                        -->
+                <script language="js"><![CDATA[//
+                    		var pathToExternalUris = org.apache.synapse.util.xpath.SynapseXPath.parseXPathString("//external/uri");
+                    		var pathFromExternalUriToRo = org.apache.synapse.util.xpath.SynapseXPath.parseXPathString("../ro");
+							var externalUris = pathToExternalUris.selectNodes( mc);
+							var externalUriList = externalUris.listIterator();
+							var navigator = pathToExternalUris.getNavigator();
+							var navigator2 = pathFromExternalUriToRo.getNavigator();
+							var valuesClause = "";
+							var anyExternalUri = false;
+							for( ; externalUriList.hasNext(); ){
+								anyExternalUri = true;
+								var externalUriElement = externalUriList.next();
+								var externalUriValue = navigator.getElementStringValue( externalUriElement);
+								var roElement = pathFromExternalUriToRo.selectNodes( externalUriElement).get( 0);
+								var roValue = navigator2.getElementStringValue( roElement);
+								valuesClause += "(<" + roValue + "> <" + externalUriValue + ">) ";
+							}
+							java.lang.System.out.println( "valuesClause = " + valuesClause);
+							mc.setProperty("anyExternalUri", anyExternalUri);
+							if( anyExternalUri){
+								var query = "\
+										PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+										PREFIX ro: <http://purl.org/wf4ever/ro#>\
+										SELECT ?proxy\
+										WHERE {\
+											VALUES (?ro ?resource) { " + valuesClause + "}\
+											?ro ore:isDescribedBy ?graph.\
+											GRAPH ?graph{\
+												?proxy ore:proxyFor ?resource\
+											}\
+										}\
+									";
+								mc.setProperty("QUERY", query);
+								mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+							}
+                    //]]></script>
+                <log level="custom">
+                    <property expression="get-property('QUERY')" name="SPARQL QUERY:"/>
+                </log>
+                <!-- choose the xml formatter -->
+                <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+                <!-- set headers -->
+                <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
+                <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+xml"/>
+                <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+                <call>
+                    <endpoint>
+                        <http uri-template="http://sandbox.rohub.org/rodl/sparql/"/>
+                    </endpoint>
+                </call>
+                <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+                <iterate continueParent="true" expression="$body//*['uri' = name(.)]">
+                    <target>
+                        <sequence>
+                            <log level="custom">
+                                <property expression="string( .)" name="Trying to delete external resource: "/>
+                            </log>
+                            <property expression="string(.)" name="uri.var.resource" scope="default" type="STRING"/>
+                            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+                            <!-- choose the xml formatter -->
+                            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                            <!-- set headers -->
+                            <property name="Content-Type" scope="transport" type="STRING" value="application/json"/>
+                            <property name="Accept" scope="transport" type="STRING" value="*/*"/>
+                            <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                            <call>
+                                <endpoint>
+                                    <http method="delete" uri-template="{uri.var.resource}"/>
+                                </endpoint>
+                            </call>
+                            <drop/>
+                        </sequence>
+                    </target>
+                </iterate>
+            </sequence>
+        </target>
+    </clone>
+    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+    <property name="NO_ENTITY_BODY" scope="axis2" type="BOOLEAN" value="true"/>
+    <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+    <respond/>
+</sequence>

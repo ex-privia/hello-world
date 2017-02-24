@@ -2,4 +2,22 @@
     <artifact name="ROSR" groupId="com.example.Everest_API.api" version="1.0.0" type="synapse/api" serverRole="EnterpriseServiceBus">
         <file>src/main/synapse-config/api/ROSR.xml</file>
     </artifact>
+    <artifact name="transform" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/transform.xml</file>
+    </artifact>
+    <artifact name="createROsin" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/createROsin.xml</file>
+    </artifact>
+    <artifact name="DeleteROsIN" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/DeleteROsIN.xml</file>
+    </artifact>
+    <artifact name="GetListIN" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/GetListIN.xml</file>
+    </artifact>
+    <artifact name="AddResourcesIN" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/AddResourcesIN.xml</file>
+    </artifact>
+    <artifact name="DeleteResourcesIN" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/DeleteResourcesIN.xml</file>
+    </artifact>
 </artifacts>

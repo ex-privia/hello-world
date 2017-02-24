@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="DeleteROsIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <enrich>
+        <source clone="true" type="body"/>
+        <target property="BODY" type="property"/>
+    </enrich>
+    <iterate continueParent="true" expression="$ctx:BODY//ROs">
+        <target>
+            <sequence>
+                <script language="js"><![CDATA[//
+							var ro = mc.getEnvelope().getBody().getFirstElement().getText();
+							mc.setProperty("RO", ro);
+							//]]></script>
+                <property expression="get-property('RO')" name="uri.var.ro" scope="default" type="STRING"/>
+                <call>
+                    <endpoint>
+                        <http method="delete" uri-template="{uri.var.ro}"/>
+                    </endpoint>
+                </call>
+            </sequence>
+        </target>
+    </iterate>
+    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+    <property name="HTTP_SC" scope="axis2" type="STRING" value="204"/>
+    <respond/>
+</sequence>

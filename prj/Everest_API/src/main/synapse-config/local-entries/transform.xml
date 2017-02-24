@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="transform" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[//
+											function transform( mc){
+											java.lang.System.out.println("*************************************    SCRIPT TRANSFORM    ************************************");
+											java.lang.System.out.println(mc.getPayloadXML().toXMLString());
+												var semanticAnnotationElementList = mc.getPayloadXML()..semanticAnnotation;
+												java.lang.System.out.println(".......................................... " + semanticAnnotationElementList.toXMLString());
+												var bag = <bag/>;
+												var bagForProxy = <bagForProxy/>;
+												var i = 0;
+												for each ( var semanticAnnotationElement in semanticAnnotationElementList){
+													java.lang.System.out.println(".......................................... " + i++);
+													default xml namespace = "";
+													var propertyTermElementValue = semanticAnnotationElement.property.term.text();
+													var propertyVocabularyElementValue = semanticAnnotationElement.property.vocabulary.text();
+													var rdfProperty;
+													if( 'literal' in semanticAnnotationElement){
+														var literalElementValue = semanticAnnotationElement.literal.text();
+														var datatypeElementValue = 'http://www.w3.org/2001/XMLSchema#string';
+														if( 'datatype' in semanticAnnotationElement){
+															datatypeElementValue = semanticAnnotationElement.datatype.text();
+														}
+														java.lang.System.out.println("///////////////////////////////////////////////////////// propertyTermElementValue = " + propertyTermElementValue + "; propertyVocabularyElementValue = " + propertyVocabularyElementValue + "; datatypeElementValue = " + datatypeElementValue + "; literalElementValue = " + literalElementValue);
+														//default xml namespace = propertyVocabularyElementValue;
+														rdfProperty = <{propertyTermElementValue} xmlns={propertyVocabularyElementValue} xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:datatype={datatypeElementValue}>{literalElementValue}</{propertyTermElementValue}>;
+													}else if( 'IRI' in semanticAnnotationElement){
+														var IRIElementValue = semanticAnnotationElement.IRI.text();
+														java.lang.System.out.println("///////////////////////////////////////////////////////// propertyTermElementValue = " + propertyTermElementValue + "; propertyVocabularyElementValue = " + propertyVocabularyElementValue + "; IRIElementValue = " + IRIElementValue);
+														//default xml namespace = propertyVocabularyElementValue;
+														rdfProperty = <{propertyTermElementValue} xmlns={propertyVocabularyElementValue} xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource={IRIElementValue}/>;
+													}else{
+														java.lang.System.out.println("WRONG semanticAnnotationElement: \r\n" + semanticAnnotationElement.toXMLString());
+														continue;
+													}
+													if( 'annotates' in semanticAnnotationElement && semanticAnnotationElement.annotates.text().equals('proxy')){
+												    		bagForProxy.appendChild( rdfProperty);
+													}else{
+												    		bag.appendChild( rdfProperty);
+													}
+												}
+
+												var root = <root/>;
+												if( bag.*.length() > 0){
+													var forResource = <forResource/>;
+													java.lang.System.out.println( 'annotationBodyRdfXmlForResource.length = ' + bag.*.length());
+													var annotationBodyRdfXml =
+														<rdf:RDF
+						                    							xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+					                    							/>
+							                    				;
+													var DescriptionBodyRdfXml =
+				                    								<rdf:Description rdf:about={ mc.getProperty('resourceUri')}
+						                    							xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+				                    								/>
+							                    				;
+														DescriptionBodyRdfXml.appendChild( bag.*);
+										                    	annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
+							                    		forResource.appendChild( bag.*);
+							                    		//forResource.appendChild( annotationBodyRdfXml);
+							                    		root.appendChild(forResource);
+										                    	mc.setProperty( 'annotationBodyRdfXmlForResource', annotationBodyRdfXml);
+												}
+												if( bagForProxy.*.length() > 0){
+													var forProxy = <forProxy/>;
+													java.lang.System.out.println( 'annotationBodyRdfXmlForProxy.length = ' + bagForProxy.*.length());
+													var annotationBodyRdfXml =
+														<rdf:RDF
+						                    							xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+					                    							/>
+							                    				;
+													var DescriptionBodyRdfXml =
+				                    								<rdf:Description rdf:about={ mc.getProperty('proxyUri')}
+						                    							xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+				                    								/>
+							                    				;
+														DescriptionBodyRdfXml.appendChild( bagForProxy.*);
+										                    	annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
+							                    	
+							                    		forProxy.appendChild( bagForProxy.*);
+							                    		//forProxy.appendChild( annotationBodyRdfXml);
+							                    		root.appendChild( forProxy);
+										                    	mc.setProperty( 'annotationBodyRdfXmlForProxy', annotationBodyRdfXml);
+								        		 }
+								        		 if( root.*.length() > 0){
+								        		 	mc.setPayloadXML( root);
+								        		 }
+												java.lang.System.out.println( 'root\r\n' + root.toXMLString());
+}
+								        	//]]></localEntry>

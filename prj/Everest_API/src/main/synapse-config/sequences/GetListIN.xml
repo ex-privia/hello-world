@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="GetListIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <log level="custom">
+        <property name="mylog" value="***************************** RECEIVED REQUEST FROM THE CLIENT **************************"/>
+    </log>
+    <!-- choose the xml formatter -->
+    <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+    <!-- set headers -->
+    <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
+    <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
+    <log level="custom">
+        <property name="mylog" value="*********************** CALLING BACK END: SPARQL ********************"/>
+    </log>
+    <!-- call the annotation operation on the ro api -->
+    <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+    <script language="js"><![CDATA[//
+            	var payloadJSON = mc.getPayloadJSON();
+				var entityType = "";
+				if( 'entityType' in payloadJSON){
+					entityType = payloadJSON.entityType;
+				}
+				var query = "";
+				if( entityType === "resource"){
+					var ro = "";
+					if( 'ro' in payloadJSON){
+						ro = payloadJSON.ro;
+					}
+					var orderBy = "ORDER BY ?created ?entryOf ?resource ?creator ?type";
+					if( 'orderBy' in payloadJSON){
+						orderBy = "ORDER BY " + payloadJSON.orderBy;
+					}
+					query = "\
+						PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+						PREFIX  ao:    <http://purl.org/ao/>\
+						PREFIX dct: <http://purl.org/dc/terms/>\
+						PREFIX ro: <http://purl.org/wf4ever/ro#>\
+						SELECT ?resource ?creator ?created ?name ?filesize ?type ?proxy ?entryOf\
+						WHERE {\
+						<" + ro + "> ore:isDescribedBy ?graph ;\
+									 ore:aggregates ?resource .\
+						OPTIONAL { ?resource ro:name ?name}\
+						OPTIONAL { ?resource ro:filesize ?filesize}\
+						OPTIONAL { ?resource a ?type\
+						FILTER ( ?type != ore:AggregatedResource)\
+						FILTER ( ?type != ro:Resource)\
+						FILTER ( ?type != ore:Aggregation)\
+						}\
+						OPTIONAL { [a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf }\
+						GRAPH ?graph{\
+							?resource a ro:Resource .\
+							OPTIONAL { ?resource dct:creator ?creator}\
+							OPTIONAL { ?resource dct:created ?created}\
+							?proxy ore:proxyFor ?resource\
+							} \
+						} " + orderBy + "\
+					";
+				}else{
+					var vrc = "";
+					if( 'vrc' in payloadJSON){
+						vrc = "FILTER regex( str( ?vrc), \"" + payloadJSON.vrc + "\", \"i\") ";
+					}
+	            	var createdInterval = "";
+					if( 'since_YYYY-MM-DD' in payloadJSON){
+		            	createdInterval += "\
+						    FILTER ( ?created >= \"" + payloadJSON["since_YYYY-MM-DD"] + "T00:00:00.000Z\"^^xsd:dateTime) \
+						";
+					}
+					if( 'till_YYYY-MM-DD' in payloadJSON){
+		            	createdInterval += "\
+						    FILTER ( ?created >= \"" + payloadJSON["till_YYYY-MM-DD"] + "T00:00:00.000Z\"^^xsd:dateTime) \
+						";
+					}
+					var title = "";
+					if( 'title' in payloadJSON){
+						title = "FILTER regex( str( ?title), \"" + payloadJSON.title + "\", \"i\")";
+					}
+					var description = "";
+					if( 'description' in payloadJSON){
+						description = "FILTER regex( str( ?description), \"" + payloadJSON.description + "\", \"i\")";
+					}
+					var creator = "";
+					if( 'creator' in payloadJSON){
+						creator = "FILTER regex( str( ?creator), \"" + payloadJSON.creator + "\", \"i\")";
+					}
+					var status = "";
+					if( 'status' in payloadJSON){
+						status = "FILTER EXISTS{ ?ro a roevo:" + payloadJSON.status + "}";
+					}
+					var ro = "";
+					if( 'ro' in payloadJSON){
+						ro = "FILTER regex( str( ?ro), \"" + payloadJSON.ro + "\", \"i\")";
+					}
+					var orderBy = "ORDER BY ?title ?created ?creator ?ro ?description ?vrc ?status";
+					if( 'orderBy' in payloadJSON){
+						orderBy = "ORDER BY " + payloadJSON.orderBy;
+					}
+					query = "\
+					PREFIX dct: <http://purl.org/dc/terms/>\
+					PREFIX dcterms: <http://purl.org/dc/terms/>\
+					PREFIX ro: <http://purl.org/wf4ever/ro#>\
+					PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\
+					PREFIX acs: <http://www.acsys.it/everest#>\
+					PREFIX roevo: <http://purl.org/wf4ever/roevo#>\
+					PREFIX foaf: <http://xmlns.com/foaf/0.1/>\
+					SELECT ?ro ?created ?title ?description ?vrc ?creatorName ?creator (IF(EXISTS{ ?ro a roevo:LiveRO}, \"LiveRO\", IF( EXISTS{ ?ro a roevo:SnapshotRO}, \"SnapshotRO\", \"ArchivedRO\")) as ?status)\
+					WHERE { \
+					 	?ro a ro:ResearchObject .\
+					    OPTIONAL { ?ro acs:vrc ?vrc } .\
+					    OPTIONAL { ?ro dct:created ?created } .\
+						OPTIONAL { ?ro dct:title ?title } .\
+						OPTIONAL { ?ro dct:description ?description } .\
+						OPTIONAL { ?ro dcterms:creator ?creator .\
+						OPTIONAL { ?creator foaf:name ?creatorName . } }\
+						" + vrc
+						+ createdInterval
+						+ title
+						+ description
+						+ creator
+						+ status
+						+ ro
+					+ " } " + orderBy
+					;
+					// FILTER regex( str( ?x), \"Pack\")\
+				}
+				mc.setProperty("QUERY", query);
+				mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+			//]]></script>
+    <log level="custom">
+        <property expression="get-property('QUERY')" name="SPARQL QUERY:"/>
+    </log>
+    <call>
+        <endpoint>
+            <http uri-template="http://sandbox.rohub.org/rodl/"/>
+        </endpoint>
+    </call>
+    <respond/>
+</sequence>
