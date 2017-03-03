@@ -9,14 +9,15 @@
   <name>Everest_APICompositeApplication</name>
   <description>Everest_APICompositeApplication</description>
   <properties>
-    <com.example.Everest_API.sequence_._AddResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddResourcesIN>
+    <artifact.types>jaggery/app=zip,synapse/priority-executor=xml,synapse/inbound-endpoint=xml,service/rule=aar,synapse/message-store=xml,event/stream=json,service/meta=xml,synapse/proxy-service=xml,bpel/workflow=zip,synapse/sequence=xml,synapse/endpointTemplate=xml,carbon/application=car,wso2/gadget=dar,synapse/api=xml,synapse/event-source=xml,synapse/message-processors=xml,event/receiver=xml,lib/dataservice/validator=jar,synapse/template=xml,synapse/endpoint=xml,lib/carbon/ui=jar,lib/synapse/mediator=jar,event/publisher=xml,synapse/local-entry=xml,synapse/task=xml,webapp/jaxws=war,registry/resource=zip,synapse/configuration=xml,service/axis2=aar,synapse/lib=zip,synapse/sequenceTemplate=xml,event/execution-plan=siddhiql,service/dataservice=dbs,web/application=war,lib/library/bundle=jar</artifact.types>
+    <com.example.Everest_API.sequence_._createROsin>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createROsin>
     <com.example.Everest_API.local-entry_._transform>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transform>
+    <com.example.Everest_API.sequence_._AddResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddResourcesIN>
     <com.example.Everest_API.sequence_._DeleteResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteResourcesIN>
     <com.example.Everest_API.sequence_._GetListIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._GetListIN>
-    <com.example.Everest_API.sequence_._createROsin>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createROsin>
-    <com.example.Everest_API.sequence_._DeleteROsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteROsIN>
-    <artifact.types>jaggery/app=zip,synapse/priority-executor=xml,synapse/inbound-endpoint=xml,service/rule=aar,synapse/message-store=xml,event/stream=json,service/meta=xml,synapse/proxy-service=xml,bpel/workflow=zip,synapse/sequence=xml,synapse/endpointTemplate=xml,carbon/application=car,wso2/gadget=dar,synapse/api=xml,synapse/event-source=xml,synapse/message-processors=xml,event/receiver=xml,lib/dataservice/validator=jar,synapse/template=xml,synapse/endpoint=xml,lib/carbon/ui=jar,lib/synapse/mediator=jar,event/publisher=xml,synapse/local-entry=xml,synapse/task=xml,webapp/jaxws=war,registry/resource=zip,synapse/configuration=xml,service/axis2=aar,synapse/lib=zip,synapse/sequenceTemplate=xml,event/execution-plan=siddhiql,service/dataservice=dbs,web/application=war,lib/library/bundle=jar</artifact.types>
     <com.example.Everest_API.api_._ROSR>capp/EnterpriseServiceBus</com.example.Everest_API.api_._ROSR>
+    <com.example.Everest_API.sequence_._DeleteROsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteROsIN>
+    
   </properties>
   <dependencies>
     <dependency>
@@ -37,7 +38,7 @@
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
-    <dependency>
+        <dependency>
       <groupId>com.example.Everest_API.local-entry</groupId>
       <artifactId>transform</artifactId>
       <version>1.0.0</version>

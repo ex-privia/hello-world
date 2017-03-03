@@ -54,7 +54,7 @@
 							} \
 						} " + orderBy + "\
 					";
-				}else{
+				}else if( entityType === "RO"){
 					var vrc = "";
 					if( 'vrc' in payloadJSON){
 						vrc = "FILTER regex( str( ?vrc), \"" + payloadJSON.vrc + "\", \"i\") ";
@@ -121,6 +121,116 @@
 					+ " } " + orderBy
 					;
 					// FILTER regex( str( ?x), \"Pack\")\
+				}else{
+					var ro = "";
+					if( 'ro' in payloadJSON){
+						ro = payloadJSON.ro;
+					}
+					var resource = "";
+					if( 'resource' in payloadJSON){
+						resource = payloadJSON.resource;
+						var orderBy = "ORDER BY ?term ?vocabulary ?annotatedSince ?annotatorName ?annotates";
+						if( 'orderBy' in payloadJSON){
+							orderBy = "ORDER BY " + payloadJSON.orderBy;
+						}
+						query = "\
+							PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+							PREFIX  ao:    <http://purl.org/ao/>\
+							PREFIX dct: <http://purl.org/dc/terms/>\
+							PREFIX ro: <http://purl.org/wf4ever/ro#>\
+							PREFIX foaf: <http://xmlns.com/foaf/0.1/>\
+							PREFIX afn: <http://jena.hpl.hp.com/ARQ/function#>\
+							SELECT ?vocabulary ?term ?value ?annotatedSince ?annotator ?annotatorName ?created ?creator ?creatorName ?annotates ?annotation ?body\
+							WHERE {\
+								VALUES (?ro ?res) {(<" + ro + "> <" + resource + ">)}\
+								?ro ore:isDescribedBy ?manifest\
+								GRAPH ?manifest{\
+									{\
+										?annotation ro:annotatesAggregatedResource ?res.\
+										?annotation ao:body ?body.\
+										GRAPH ?body{\
+											?res ?metadata ?value\
+										}\
+										BIND( afn:namespace( ?metadata) AS ?vocabulary)\
+										BIND( afn:localname( ?metadata) AS ?term)\
+										OPTIONAL { ?annotation dct:created ?annotatedSince;\
+												dct:creator ?annotator.\
+											OPTIONAL{\
+													?annotator foaf:name ?annotatorName\
+												}\
+										}\
+										OPTIONAL { ?body dct:created ?created;\
+												dct:creator ?creator.\
+											OPTIONAL{\
+													?creator foaf:name ?creatorName\
+												}\
+										}\
+									}UNION{\
+										?proxy ore:proxyFor ?res.\
+										?annotation ro:annotatesAggregatedResource ?proxy.\
+										?annotation ao:body ?body.\
+										GRAPH ?body{\
+											?proxy ?metadata ?value\
+										}\
+										BIND( afn:namespace( ?metadata) AS ?vocabulary)\
+										BIND( afn:localname( ?metadata) AS ?term)\
+										OPTIONAL { ?annotation dct:created ?annotatedSince;\
+												dct:creator ?annotator.\
+											OPTIONAL{\
+													?annotator foaf:name ?annotatorName\
+												}\
+										}\
+										OPTIONAL { ?body dct:created ?created;\
+												dct:creator ?creator.\
+											OPTIONAL{\
+													?creator foaf:name ?creatorName\
+												}\
+										}\
+										BIND( \"proxy\" AS ?annotates)\
+									}\
+								}\
+							} " + orderBy + "\
+						";
+					}else{
+						var orderBy = "ORDER BY ?term ?vocabulary ?annotatedSince ?annotatorName";
+						if( 'orderBy' in payloadJSON){
+							orderBy = "ORDER BY " + payloadJSON.orderBy;
+						}
+						query = "\
+							PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+							PREFIX  ao:    <http://purl.org/ao/>\
+							PREFIX dct: <http://purl.org/dc/terms/>\
+							PREFIX ro: <http://purl.org/wf4ever/ro#>\
+							PREFIX foaf: <http://xmlns.com/foaf/0.1/>\
+							PREFIX afn: <http://jena.hpl.hp.com/ARQ/function#>\
+							SELECT ?vocabulary ?term ?value ?annotatedSince ?annotator ?annotatorName ?created ?creator ?creatorName ?annotation ?body\
+							WHERE {\
+								VALUES (?ro) {(<" + ro + ">)}\
+								?ro ore:isDescribedBy ?manifest\
+								GRAPH ?manifest{\
+									?annotation ro:annotatesAggregatedResource ?ro.\
+									?annotation ao:body ?body.\
+									GRAPH ?body{\
+										?ro ?metadata ?value\
+									}\
+									BIND( afn:namespace( ?metadata) AS ?vocabulary)\
+									BIND( afn:localname( ?metadata) AS ?term)\
+									OPTIONAL { ?annotation dct:created ?annotatedSince;\
+											dct:creator ?annotator.\
+										OPTIONAL{\
+												?annotator foaf:name ?annotatorName\
+											}\
+									}\
+									OPTIONAL { ?body dct:created ?created;\
+											dct:creator ?creator.\
+										OPTIONAL{\
+												?creator foaf:name ?creatorName\
+											}\
+										}\
+								}\
+							} " + orderBy + "\
+						";
+					}
 				}
 				mc.setProperty("QUERY", query);
 				mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
