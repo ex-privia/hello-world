@@ -74,7 +74,7 @@
 					}
 					if( 'till_YYYY-MM-DD' in payloadJSON){
 		            	createdInterval += "\
-						    FILTER ( ?created >= \"" + payloadJSON["till_YYYY-MM-DD"] + "T00:00:00.000Z\"^^xsd:dateTime) \
+						    FILTER ( ?created <= \"" + payloadJSON["till_YYYY-MM-DD"] + "T00:00:00.000Z\"^^xsd:dateTime) \
 						";
 					}
 					var title = "";
