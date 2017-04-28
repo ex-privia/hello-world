@@ -111,11 +111,25 @@
                     <source clone="true" property="BODY_FOR_RESOURCES" type="property"/>
                     <target type="body"/>
                 </enrich>
+                <script language="js"><![CDATA[//
+												java.lang.System.out.println( "%%%%*******************************%%%%%%" + mc.getPayloadXML().toXMLString());
+												//]]></script>
+                <script language="js"><![CDATA[//
+												java.lang.System.out.println( "%%%%*******************************%%%%%%" + mc.getPayloadXML().semanticAnnotation.toXMLString());
+												//]]></script>
+                <script language="js"><![CDATA[//
+					var second = <second/>;
+					second.appendChild( mc.getPayloadXML().semanticAnnotation);
+					mc.setPayloadXML( second);
+				//]]></script>
                 <filter xpath=".[/*/*/semanticAnnotation]">
                     <then>
+                        <script language="js"><![CDATA[//
+												java.lang.System.out.println( "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" + mc.getPayloadXML().toXMLString());
+												//]]></script>
                         <script function="transform" key="transform" language="js"/>
                         <script language="js"><![CDATA[//
-												java.lang.System.out.println( mc.getPayloadXML().toXMLString());
+												java.lang.System.out.println( "_%%%%%%%%%%%%%%%%%%%_%%%%%%%%%%%%%%%%%%%_%%%%%%%%%%%%%%%%%%%%%%%%%%%%%_%%" + mc.getPayloadXML().toXMLString());
 												//]]></script>
                         <filter xpath=".[$body//forResource or $body//forProxy]">
                             <then>
