@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="generalFault" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+    <property name="messageType" scope="axis2" type="STRING" value="text/plain"/>
+    <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+    <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+    <filter regex="0" source="get-property('axis2', 'HTTP_SC')">
+        <then/>
+        <else>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <payloadFactory media-type="json">
+                <format>
+				{
+					"RequestID": "$1",
+					"Category": "ROHUB",
+					"Msg": "$2",
+					"Code": "$3"
+				}
+			</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                    <arg evaluator="xml" expression="get-property('ERROR_MESSAGE')"/>
+                    <arg evaluator="xml" expression="get-property('ERROR_CODE')"/>
+                </args>
+            </payloadFactory>
+        </else>
+    </filter>
+    <log level="full">
+        <property name="STEP" value="OPERATION ENDED EXCEPTIONALLY"/>
+    </log>
+    <respond/>
+</sequence>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="getPermissionsIN" onError="generalFault" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <filter xpath="not($ctx:AUTH)">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[//
+				mc.getEnvelope().getBody().getFirstElement().detach();
+			//]]></script>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property expression=".//ro_uri/text()" name="uri.var.RO_URI" scope="default" type="STRING"/>
+    <filter xpath="$ctx:uri.var.RO_URI = ''">
+        <then>
+            <payloadFactory media-type="json">
+                <format key="4004"/>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                </args>
+            </payloadFactory>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <log category="WARN" level="full">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property name="Reason" value="ro_uri field in the request json from the client is missing. Replying with a 400"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property name="Accept" scope="transport" type="STRING" value="application/json"/>
+    <property expression="fn:concat( 'http://sandbox.rohub.org/rodl/accesscontrol/permissions/?ro=', get-property('uri.var.RO_URI'))" name="uri.var.resource" scope="default" type="STRING"/>
+    <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+    <call>
+        <endpoint name="getPermissions">
+            <http method="get" uri-template="{uri.var.resource}">
+                <timeout>
+                    <duration>30000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>-1</errorCodes>
+                    <initialDuration>0</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
+                    <maximumDuration>0</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>-1</errorCodes>
+                </markForSuspension>
+            </http>
+        </endpoint>
+    </call>
+    <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+        <then>
+            <log level="full">
+                <property name="EsbRequest" value="get-property('uri.var.resource')"/>
+            </log>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <payloadFactory media-type="json">
+                <format>
+				{
+					"RequestID": "$1",
+					"Category": "ROHUB",
+					"Code": "9998"
+				}
+			</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                </args>
+            </payloadFactory>
+            <log>
+                <property name="STEP" value="OPERATION ENDED EXCEPTIONALLY"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <loopback/>
+</sequence>

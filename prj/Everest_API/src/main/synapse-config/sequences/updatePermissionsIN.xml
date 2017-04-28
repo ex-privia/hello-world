@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="updatePermissionsIN" onError="generalFault" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <filter xpath="not($ctx:AUTH)">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[//
+				mc.getEnvelope().getBody().getFirstElement().detach();
+			//]]></script>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property name="Accept" scope="transport" type="STRING" value="application/json"/>
+    <property expression="//permission/add[role/text()='']" name="role_blank" scope="default" type="STRING"/>
+    <property expression="//permission/add[user/text()='']" name="user_blank" scope="default" type="STRING"/>
+    <property expression="//permission/add[ro_uri/text() = '']" name="ro_uri_blank" scope="default" type="STRING"/>
+    <property expression="//permission/add[fn:count(*)&lt;3]" name="missing_either_role_or_ro_uri_or_user" scope="default" type="STRING"/>
+    <property expression="//permission/add[fn:count(role)!=1]" name="not_one_and_only_one_role" scope="default" type="STRING"/>
+    <property expression="//permission/add[fn:count(user)!=1]" name="not_one_and_only_one_user" scope="default" type="STRING"/>
+    <property expression="//permission/add[fn:count(ro_uri)!=1]" name="not_one_and_only_one_ro_uri" scope="default" type="STRING"/>
+    <property expression="//permission/delete[permission_uri/text()='']" name="permission_uri_blank" scope="default" type="STRING"/>
+    <property expression="//permission/delete[fn:count(permission_uri)!=1]" name="not_one_and_only_one_permission_uri" scope="default" type="STRING"/>
+    <filter xpath="get-property('role_blank') or get-property('ro_uri_blank') or get-property('user_blank') or get-property('permission_uri_blank') or get-property('missing_either_role_or_ro_uri_or_user') or get-property('not_one_and_only_one_role') or get-property('not_one_and_only_one_user') or get-property('not_one_and_only_one_ro_uri') or get-property('not_one_and_only_one_permission_uri')">
+        <then>
+            <payloadFactory media-type="json">
+                <format key="4007"/>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                </args>
+            </payloadFactory>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <log category="WARN" level="full">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property name="Reason" value="preconditions failed."/>
+                <property expression="get-property('role_blank')" name="role_blank"/>
+                <property expression="get-property('user_blank')" name="user_blank"/>
+                <property expression="get-property('ro_uri_blank')" name="ro_uri_blank"/>
+                <property expression="get-property('permission_uri_blank')" name="permission_uri_blank"/>
+                <property expression="get-property('missing_either_role_or_ro_uri_or_user')" name="missing_either_role_or_ro_uri_or_user"/>
+                <property expression="get-property('not_one_and_only_one_role')" name="not_one_and_only_one_role"/>
+                <property expression="get-property('not_one_and_only_one_user')" name="not_one_and_only_one_user"/>
+                <property expression="get-property('not_one_and_only_one_ro_uri')" name="not_one_and_only_one_ro_uri"/>
+                <property expression="get-property('not_one_and_only_one_permission_uri')" name="not_one_and_only_one_permission_uri"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+    <property expression="get-property('MessageID')" name="REQUEST_ID" scope="default" type="STRING"/>
+    <iterate continueParent="true" expression="//permission/*">
+        <target>
+            <sequence>
+                <filter xpath="//add">
+                    <then>
+                        <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                        <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                        <property expression="//ro_uri" name="RO_URI" scope="default" type="STRING"/>
+                        <property expression="//role" name="ROLE" scope="default" type="STRING"/>
+                        <property expression="//user" name="USER" scope="default" type="STRING"/>
+                        <payloadFactory media-type="json">
+                            <format>
+								{ 
+									"ro": "$1",
+									"user": "$2",
+									"role": "$3"
+								}
+							</format>
+                            <args>
+                                <arg evaluator="xml" expression="get-property('RO_URI')"/>
+                                <arg evaluator="xml" expression="get-property('USER')"/>
+                                <arg evaluator="xml" expression="get-property('ROLE')"/>
+                            </args>
+                        </payloadFactory>
+                        <call>
+                            <endpoint name="updatePermissions">
+                                <http method="post" uri-template="http://sandbox.rohub.org/rodl/accesscontrol/permissions/">
+                                    <timeout>
+                                        <duration>30000</duration>
+                                        <responseAction>fault</responseAction>
+                                    </timeout>
+                                    <suspendOnFailure>
+                                        <errorCodes>-1</errorCodes>
+                                        <initialDuration>0</initialDuration>
+                                        <progressionFactor>1.0</progressionFactor>
+                                        <maximumDuration>0</maximumDuration>
+                                    </suspendOnFailure>
+                                    <markForSuspension>
+                                        <errorCodes>-1</errorCodes>
+                                    </markForSuspension>
+                                </http>
+                            </endpoint>
+                        </call>
+                        <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                            <then>
+                                <log category="WARN" level="full">
+                                    <property expression="fn:concat('FAILED ADDING ROLE ', get-property('ROLE'), ' TO USER ', get-property('USER'), ' FOR RO ', get-property('RO_URI'))" name="APPL"/>
+                                    <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                    <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                    <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                </log>
+                            </then>
+                            <else>
+                                <log level="full">
+                                    <property expression="fn:concat('ADDED ROLE ', get-property('ROLE'), ' TO USER ', get-property('USER'), ' FOR RO ', get-property('RO_URI'))" name="APPL"/>
+                                    <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                    <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                    <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                </log>
+                            </else>
+                        </filter>
+                        <drop/>
+                    </then>
+                    <else>
+                        <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                        <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                        <property expression="//permission_uri" name="PERMISSION_URI" scope="default" type="STRING"/>
+                        <property expression="//permission_uri" name="uri.var.permission_uri" scope="default" type="STRING"/>
+                        <call>
+                            <endpoint name="deletePermissions">
+                                <http method="delete" uri-template="{uri.var.permission_uri}">
+                                    <timeout>
+                                        <duration>30000</duration>
+                                        <responseAction>fault</responseAction>
+                                    </timeout>
+                                    <suspendOnFailure>
+                                        <errorCodes>-1</errorCodes>
+                                        <initialDuration>0</initialDuration>
+                                        <progressionFactor>1.0</progressionFactor>
+                                        <maximumDuration>0</maximumDuration>
+                                    </suspendOnFailure>
+                                    <markForSuspension>
+                                        <errorCodes>-1</errorCodes>
+                                    </markForSuspension>
+                                </http>
+                            </endpoint>
+                        </call>
+                        <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                            <then>
+                                <log category="WARN" level="full">
+                                    <property expression="fn:concat('FAILED DELETING PERMISSION ', get-property('PERMISSION_URI'))" name="APPL"/>
+                                    <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                    <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                    <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                </log>
+                            </then>
+                            <else>
+                                <log level="full">
+                                    <property expression="fn:concat('DELETED PERMISSION ', get-property('PERMISSION_URI'))" name="APPL"/>
+                                    <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                    <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                    <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                </log>
+                            </else>
+                        </filter>
+                        <drop/>
+                    </else>
+                </filter>
+            </sequence>
+        </target>
+    </iterate>
+    <loopback/>
+</sequence>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="4006" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[{
+	"RequestID": "$1",
+	"Category": "ESB",
+	"Msg": "One (and only one) ro_uri field and one (and only one) mode field must be specified in the request JSON for each visibility item.",
+	"Code": "4006"
+}]]></localEntry>

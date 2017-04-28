@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="4004" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[{
+	"RequestID": "$1",
+	"Category": "ESB",
+	"Msg": "ro_uri field must be specified in the request JSON.",
+	"Code": "4004"
+}]]></localEntry>

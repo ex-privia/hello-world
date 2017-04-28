@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="4007" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[{
+	"RequestID": "$1",
+	"Category": "ESB",
+	"Msg": "One (and only one) ro_uri field, one (and only one) role field, and one (and only one) user field must be specified in the request JSON for each permission/add item and one (and only one) permission_uri field must be specified in the request JSON for each permission/delete item.",
+	"Code": "4007"
+}]]></localEntry>

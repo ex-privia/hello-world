@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="updateRoModesIN" onError="generalFault" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <filter xpath="not($ctx:AUTH)">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[//
+				mc.getEnvelope().getBody().getFirstElement().detach();
+			//]]></script>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property name="Accept" scope="transport" type="STRING" value="application/json"/>
+    <property expression="//visibility[mode/text()='']" name="mode_blank" scope="default" type="STRING"/>
+    <property expression="//visibility[ro_uri/text() = '']" name="ro_uri_blank" scope="default" type="STRING"/>
+    <property expression="//visibility[fn:count(*)&lt;2]" name="missing_mode_or_ro_uri" scope="default" type="STRING"/>
+    <property expression="//visibility[fn:count(mode)!=1]" name="not_one_and_only_one_mode" scope="default" type="STRING"/>
+    <property expression="//visibility[fn:count(ro_uri)!=1]" name="not_one_and_only_one_ro_uri" scope="default" type="STRING"/>
+    <filter xpath="get-property('mode_blank') or get-property('ro_uri_blank') or get-property('missing_mode_or_ro_uri') or get-property('not_one_and_only_one_mode') or get-property('not_one_and_only_one_ro_uri')">
+        <then>
+            <payloadFactory media-type="json">
+                <format key="4006"/>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                </args>
+            </payloadFactory>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <log category="WARN" level="full">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property name="Reason" value="preconditions failed."/>
+                <property expression="get-property('mode_blank')" name="mode_blank"/>
+                <property expression="get-property('ro_uri_blank')" name="ro_uri_blank"/>
+                <property expression="get-property('missing_mode_or_ro_uri')" name="missing_mode_or_ro_uri"/>
+                <property expression="get-property('not_one_and_only_one_mode')" name="not_one_and_only_one_mode"/>
+                <property expression="get-property('not_one_and_only_one_ro_uri')" name="not_one_and_only_one_ro_uri"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+    <property expression="get-property('MessageID')" name="REQUEST_ID" scope="default" type="STRING"/>
+    <iterate continueParent="true" expression="//visibility">
+        <target>
+            <sequence>
+                <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                <property expression="//ro_uri" name="RO_URI" scope="default" type="STRING"/>
+                <property expression="//mode" name="MODE" scope="default" type="STRING"/>
+                <payloadFactory media-type="json">
+                    <format>
+						{ 
+							"ro": "$1",
+							"mode": "$2"
+						}
+					</format>
+                    <args>
+                        <arg evaluator="xml" expression="get-property('RO_URI')"/>
+                        <arg evaluator="xml" expression="get-property('MODE')"/>
+                    </args>
+                </payloadFactory>
+                <call>
+                    <endpoint name="updateRoModes">
+                        <http method="post" uri-template="http://sandbox.rohub.org/rodl/accesscontrol/modes/">
+                            <timeout>
+                                <duration>30000</duration>
+                                <responseAction>fault</responseAction>
+                            </timeout>
+                            <suspendOnFailure>
+                                <errorCodes>-1</errorCodes>
+                                <initialDuration>0</initialDuration>
+                                <progressionFactor>1.0</progressionFactor>
+                                <maximumDuration>0</maximumDuration>
+                            </suspendOnFailure>
+                            <markForSuspension>
+                                <errorCodes>-1</errorCodes>
+                            </markForSuspension>
+                        </http>
+                    </endpoint>
+                </call>
+                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                    <then>
+                        <log category="WARN" level="full">
+                            <property expression="fn:concat('FAILED UPDATING MODE FOR RO ', get-property('RO_URI'), ' TO MODE ', get-property('MODE'))" name="APPL"/>
+                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                        </log>
+                    </then>
+                    <else/>
+                </filter>
+                <drop/>
+            </sequence>
+        </target>
+    </iterate>
+    <loopback/>
+</sequence>
