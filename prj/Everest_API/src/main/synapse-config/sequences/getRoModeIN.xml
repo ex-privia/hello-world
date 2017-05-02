@@ -61,15 +61,15 @@
             </http>
         </endpoint>
     </call>
+    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+    <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+    <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
     <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
         <then>
             <log level="full">
                 <property name="EsbRequest" value="get-property('uri.var.resource')"/>
             </log>
-            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
-            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
-            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
-            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
             <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
             <payloadFactory media-type="json">
                 <format>
