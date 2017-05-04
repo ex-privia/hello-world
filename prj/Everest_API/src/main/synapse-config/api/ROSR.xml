@@ -161,4 +161,26 @@
         </outSequence>
         <faultSequence/>
     </resource>
+    <resource methods="POST" url-mapping="/createFolders">
+        <inSequence>
+            <log>
+                <property name="STEP" value="OPERATION STARTED"/>
+                <property expression="get-property('axis2', 'REMOTE_HOST')" name="REMOTE_HOST"/>
+                <property expression="get-property('axis2', 'REMOTE_ADDR')" name="REMOTE_ADDR"/>
+            </log>
+            <sequence key="createFoldersIN"/>
+        </inSequence>
+        <outSequence>
+            <log level="custom">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+            </log>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property name="messageType" scope="axis2" type="STRING" value="text/plain"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <respond/>
+        </outSequence>
+        <faultSequence/>
+    </resource>
 </api>

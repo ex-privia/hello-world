@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="4003" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[{
+	"RequestID": "$1",
+	"Category": "ESB",
+	"Msg": "In the input json: there must be 1 not blank ro_uri field; there must be a folder array with at least one entry; in each folder entry there must be 1 not blank folderName field; in each folder/resource entry there must be 1 not blank uri field.",
+	"Code": "4003"
+}]]></localEntry>

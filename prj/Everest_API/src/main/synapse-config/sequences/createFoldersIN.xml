@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="createFoldersIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <filter xpath="not($trp:Authorization)">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[//
+				    mc.getEnvelope().getBody().getFirstElement().detach();
+				   //]]></script>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property expression="/soapenv:Body/jsonObject[fn:count(ro_uri)!=1]" name="not_1_ro_uri" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <property expression="/soapenv:Body/jsonObject[fn:normalize-space( ro_uri/text())='']" name="ro_uri_blank" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <property expression="/soapenv:Body/jsonObject[fn:count(folder)=0]" name="not_+_folder" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <property expression="/soapenv:Body/jsonObject/folder[fn:count(folderName)!=1]" name="not_1_folderName" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <property expression="/soapenv:Body/jsonObject/folder[fn:normalize-space( folderName/text())='']" name="folderName_blank" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <property expression="/soapenv:Body/jsonObject/folder/resource[fn:count(uri)!=1]" name="not_1_resource.uri" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <property expression="/soapenv:Body/jsonObject/folder/resource[fn:normalize-space( uri/text()) = '']" name="resource.uri_blank" scope="default" type="STRING" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+    <filter xpath="get-property('not_1_ro_uri') or get-property('ro_uri_blank') or get-property('not_+_folder') or get-property('not_1_folderName') or get-property('folderName_blank') or get-property('not_1_resource.uri') or get-property('resource.uri_blank')">
+        <then>
+            <payloadFactory media-type="json">
+                <format key="4003"/>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                </args>
+            </payloadFactory>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <log category="WARN" level="full">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property name="Reason" value="Preconditions failed. Replying with a 400"/>
+                <property expression="get-property('not_1_ro_uri')" name="not_1_ro_uri"/>
+                <property expression="get-property('ro_uri_blank')" name="ro_uri_blank"/>
+                <property expression="get-property('not_+_folder')" name="not_+_folder"/>
+                <property expression="get-property('not_1_folderName')" name="not_1_folderName"/>
+                <property expression="get-property('folderName_blank')" name="folderName_blank"/>
+                <property expression="get-property('not_1_resource.uri')" name="not_1_resource.uri"/>
+                <property expression="get-property('resource.uri_blank')" name="resource.uri_blank"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property expression="//ro_uri" name="uri.var.RO_URI" scope="default" type="STRING"/>
+    <iterate continueParent="true" expression="$body//folder">
+        <target>
+            <sequence>
+                <property expression="//folderName/text()" name="FOLDER_NAME" scope="default" type="STRING"/>
+                <enrich>
+                    <source clone="true" type="body"/>
+                    <target property="ithIterationStep" type="property"/>
+                </enrich>
+                <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                <script language="js"><![CDATA[//
+                 					var folderBodyRdfXml =
+										<rdf:RDF
+											  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	                    				/>
+			                    	;
+			                    	
+                         			var xmlPayload = mc.getPayloadXML();
+                         			var resources = xmlPayload.resource;
+                         			var roFolder = <ro:Folder xmlns:ro="http://purl.org/wf4ever/ro#"/>;
+                         			for (i in resources) {										    
+									    appendResorce(resources[i], folderBodyRdfXml,roFolder);
+									}
+                         			
+                         			function appendResorce(currResource, folderBodyRdfXml, roFolder) {
+	                         			roFolder.appendChild(
+										    
+											    <ore:aggregates rdf:resource={currResource.uri} xmlns:ore="http://www.openarchives.org/ore/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
+											);
+										if(currResource.name.toXMLString() != "") {
+											var roFolderEntry = <ro:FolderEntry xmlns:ro="http://purl.org/wf4ever/ro#"/>;
+											var resName = currResource.name;
+											java.lang.System.out.println( "resName " + resName);
+											var roEntryName = <ro:entryName xmlns:ro="http://purl.org/wf4ever/ro#">{resName.toString()}</ro:entryName>;
+											roFolderEntry.appendChild(roEntryName);
+											roFolderEntry.appendChild(
+									    	<ore:proxyFor rdf:resource={currResource.uri} xmlns:ore="http://www.openarchives.org/ore/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>);
+									    	
+									    	folderBodyRdfXml.appendChild(roFolderEntry);
+										}
+										
+									    
+									    
+                         			}
+                         			folderBodyRdfXml.appendChild(roFolder);
+									mc.setPayloadXML( folderBodyRdfXml);
+                                 	
+    				//]]></script>
+                <property expression="get-property('FOLDER_NAME')" name="Slug" scope="transport" type="STRING"/>
+                <property expression="$trp:Authorization" name="Authorization" scope="transport" type="STRING"/>
+                <property name="messageType" scope="axis2" type="STRING" value="application/vnd.wf4ever.folder"/>
+                <property name="ContentType" scope="axis2" type="STRING" value="application/vnd.wf4ever.folder"/>
+                <header name="Content-Type" scope="transport" value="application/vnd.wf4ever.folder"/>
+                <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+                <call>
+                    <endpoint name="createFolders">
+                        <http method="post" uri-template="{uri.var.RO_URI}">
+                            <timeout>
+                                <duration>30000</duration>
+                                <responseAction>fault</responseAction>
+                            </timeout>
+                            <suspendOnFailure>
+                                <errorCodes>-1</errorCodes>
+                                <initialDuration>0</initialDuration>
+                                <progressionFactor>1.0</progressionFactor>
+                                <maximumDuration>0</maximumDuration>
+                            </suspendOnFailure>
+                            <markForSuspension>
+                                <errorCodes>-1</errorCodes>
+                            </markForSuspension>
+                        </http>
+                    </endpoint>
+                </call>
+                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                    <then>
+                        <log category="WARN" level="full">
+                            <property expression="fn:concat('FAILED CREATING FOLDER ', get-property('FOLDER'), ' IN THE RO ', get-property('uri.var.RO_URI'))" name="APPL"/>
+                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                        </log>
+                    </then>
+                    <else>
+                        <log level="full">
+                            <property expression="fn:concat('CREATED FOLDER ', get-property('FOLDER'), ' IN THE RO ', get-property('uri.var.RO_URI'))" name="APPL"/>
+                            <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                        </log>
+                    </else>
+                </filter>
+                <drop/>
+            </sequence>
+        </target>
+    </iterate>
+    <loopback/>
+</sequence>
