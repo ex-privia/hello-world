@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sequence name="AddResourcesIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property expression="get-property('MessageID')" name="REQUEST_ID" scope="default" type="STRING"/>
+    <filter xpath="not($trp:Authorization)">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[//
+				    mc.getEnvelope().getBody().getFirstElement().detach();
+				   //]]></script>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
     <property expression="$body//ro" name="uri.var.location" scope="default" type="STRING"/>
     <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
     <clone continueParent="true">
@@ -12,6 +29,7 @@
                                 <source clone="true" type="body"/>
                                 <target property="ithIterationStep" type="property"/>
                             </enrich>
+                            <property expression="$body/internal/resourceName" name="RESOURCE_NAME" scope="default" type="STRING"/>
                             <script language="js"><![CDATA[//
                                     			var fileName = mc.getPayloadXML().resourceName;
                                     			var fileContent = mc.getPayloadXML().resourceBase64Content;
@@ -36,10 +54,43 @@
                                 <property expression="get-property('uri.var.location')" name="mylog"/>
                             </log>
                             <call>
-                                <endpoint>
-                                    <http uri-template="{uri.var.location}"/>
+                                <endpoint name="aggregateInternal">
+                                    <http method="post" uri-template="{uri.var.location}">
+                                        <timeout>
+                                            <duration>30000</duration>
+                                            <responseAction>fault</responseAction>
+                                        </timeout>
+                                        <suspendOnFailure>
+                                            <errorCodes>-1</errorCodes>
+                                            <initialDuration>0</initialDuration>
+                                            <progressionFactor>1.0</progressionFactor>
+                                            <maximumDuration>0</maximumDuration>
+                                        </suspendOnFailure>
+                                        <markForSuspension>
+                                            <errorCodes>-1</errorCodes>
+                                        </markForSuspension>
+                                    </http>
                                 </endpoint>
                             </call>
+                            <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                                <then>
+                                    <log category="WARN" level="full">
+                                        <property expression="fn:concat('FAILED AGGREGATING INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                        <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                        <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                        <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                    </log>
+                                    <drop/>
+                                </then>
+                                <else>
+                                    <log>
+                                        <property expression="fn:concat('AGGREGATED INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                        <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                        <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                        <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                    </log>
+                                </else>
+                            </filter>
                             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
                             <property expression="$body//rdf:RDF/rdf:Description/ore:proxyFor/@rdf:resource" name="resourceUri" scope="default" type="STRING" xmlns:ore="http://www.openarchives.org/ore/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
                             <property expression="$body//rdf:RDF/rdf:Description[rdf:type/@rdf:resource='http://www.openarchives.org/ore/terms/Proxy']/@rdf:about" name="proxyUri" scope="default" type="STRING" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
@@ -63,6 +114,7 @@
                                     <iterate continueParent="true" expression="$body//forResource/*">
                                         <target>
                                             <sequence>
+                                                <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
                                                 <property expression="fn:concat('&lt;', get-property('resourceUri'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                                                 <script language="js"><![CDATA[//
 		                                                        var annotationBodyRdfXml =
@@ -80,16 +132,50 @@
 										                    	mc.setPayloadXML( annotationBodyRdfXml);
 	                                                        //]]></script>
                                                 <call>
-                                                    <endpoint>
-                                                        <http uri-template="{uri.var.location}"/>
+                                                    <endpoint name="aggregateAnnotationsForInternalResources">
+                                                        <http method="post" uri-template="{uri.var.location}">
+                                                            <timeout>
+                                                                <duration>30000</duration>
+                                                                <responseAction>fault</responseAction>
+                                                            </timeout>
+                                                            <suspendOnFailure>
+                                                                <errorCodes>-1</errorCodes>
+                                                                <initialDuration>0</initialDuration>
+                                                                <progressionFactor>1.0</progressionFactor>
+                                                                <maximumDuration>0</maximumDuration>
+                                                            </suspendOnFailure>
+                                                            <markForSuspension>
+                                                                <errorCodes>-1</errorCodes>
+                                                            </markForSuspension>
+                                                        </http>
                                                     </endpoint>
                                                 </call>
+                                                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                                                    <then>
+                                                        <log category="WARN" level="full">
+                                                            <property expression="fn:concat('FAILED AGGREGATING ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                        <drop/>
+                                                    </then>
+                                                    <else>
+                                                        <log>
+                                                            <property expression="fn:concat('AGGREGATED ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                    </else>
+                                                </filter>
                                             </sequence>
                                         </target>
                                     </iterate>
                                     <iterate continueParent="true" expression="$body//forProxy/*">
                                         <target>
                                             <sequence>
+                                                <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
                                                 <property expression="fn:concat('&lt;', get-property('proxyUri'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                                                 <script language="js"><![CDATA[//
 		                                                        var annotationBodyRdfXml =
@@ -107,10 +193,43 @@
 										                    	mc.setPayloadXML( annotationBodyRdfXml);
 	                                                        //]]></script>
                                                 <call>
-                                                    <endpoint>
-                                                        <http uri-template="{uri.var.location}"/>
+                                                    <endpoint name="aggregateAnnotationsForInternalResourceProxies">
+                                                        <http method="post" uri-template="{uri.var.location}">
+                                                            <timeout>
+                                                                <duration>30000</duration>
+                                                                <responseAction>fault</responseAction>
+                                                            </timeout>
+                                                            <suspendOnFailure>
+                                                                <errorCodes>-1</errorCodes>
+                                                                <initialDuration>0</initialDuration>
+                                                                <progressionFactor>1.0</progressionFactor>
+                                                                <maximumDuration>0</maximumDuration>
+                                                            </suspendOnFailure>
+                                                            <markForSuspension>
+                                                                <errorCodes>-1</errorCodes>
+                                                            </markForSuspension>
+                                                        </http>
                                                     </endpoint>
                                                 </call>
+                                                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                                                    <then>
+                                                        <log category="WARN" level="full">
+                                                            <property expression="fn:concat('FAILED AGGREGATING ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR PROXY ', get-property('proxyUri'), ' OF INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                        <drop/>
+                                                    </then>
+                                                    <else>
+                                                        <log>
+                                                            <property expression="fn:concat('AGGREGATED ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR PROXY ', get-property('proxyUri'), ' OF INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                    </else>
+                                                </filter>
                                             </sequence>
                                         </target>
                                     </iterate>
@@ -132,6 +251,7 @@
                                 <source clone="true" type="body"/>
                                 <target property="ithIterationStep" type="property"/>
                             </enrich>
+                            <property expression="$body/external/resourceUri" name="RESOURCE_URI" scope="default" type="STRING"/>
                             <script language="js"><![CDATA[//
                                     			var uri = mc.getPayloadXML().resourceUri;
 												var proxy = <rdf:RDF xmlns:ore='http://www.openarchives.org/ore/terms/' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'> <ore:Proxy> <ore:proxyFor rdf:resource={uri}/> </ore:Proxy> </rdf:RDF>;
@@ -150,6 +270,44 @@
                                     <http uri-template="{uri.var.location}"/>
                                 </endpoint>
                             </call>
+                            <call>
+                                <endpoint name="aggregateExternal">
+                                    <http method="post" uri-template="{uri.var.location}">
+                                        <timeout>
+                                            <duration>30000</duration>
+                                            <responseAction>fault</responseAction>
+                                        </timeout>
+                                        <suspendOnFailure>
+                                            <errorCodes>-1</errorCodes>
+                                            <initialDuration>0</initialDuration>
+                                            <progressionFactor>1.0</progressionFactor>
+                                            <maximumDuration>0</maximumDuration>
+                                        </suspendOnFailure>
+                                        <markForSuspension>
+                                            <errorCodes>-1</errorCodes>
+                                        </markForSuspension>
+                                    </http>
+                                </endpoint>
+                            </call>
+                            <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                                <then>
+                                    <log category="WARN" level="full">
+                                        <property expression="fn:concat('FAILED AGGREGATING EXTERNAL RESOURCE ', get-property('RESOURCE_URI'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                        <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                        <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                        <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                    </log>
+                                    <drop/>
+                                </then>
+                                <else>
+                                    <log>
+                                        <property expression="fn:concat('AGGREGATED EXTERNAL RESOURCE ', get-property('RESOURCE_URI'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                        <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                        <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                        <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                    </log>
+                                </else>
+                            </filter>
                             <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
                             <property expression="$body//rdf:RDF/rdf:Description/ore:proxyFor/@rdf:resource" name="resourceUri" scope="default" type="STRING" xmlns:ore="http://www.openarchives.org/ore/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
                             <property expression="$body//rdf:RDF/rdf:Description[rdf:type/@rdf:resource='http://www.openarchives.org/ore/terms/Proxy']/@rdf:about" name="proxyUri" scope="default" type="STRING" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
@@ -161,6 +319,7 @@
                             <script language="js"><![CDATA[//
 												java.lang.System.out.println( mc.getPayloadXML().toXMLString());
 												//]]></script>
+                            <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                             <filter xpath=".[$body//forResource or $body//forProxy]">
                                 <then>
                                     <property action="remove" name="Location" scope="transport"/>
@@ -168,11 +327,12 @@
                                     <property name="Content-Type" scope="transport" type="STRING" value="application/rdf+xml"/>
                                     <property action="remove" name="Link" scope="transport"/>
                                     <!-- avoid setting the Slug parameter, thus letting RO API to choose annotation name -->
-                                    <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                                    <property expression="$trp:Authorization" name="Authorization" scope="transport" type="STRING"/>
                                     <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
                                     <iterate continueParent="true" expression="$body//forResource/*">
                                         <target>
                                             <sequence>
+                                                <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
                                                 <property expression="fn:concat('&lt;', get-property('resourceUri'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                                                 <script language="js"><![CDATA[//
 	                                                        var annotationBodyRdfXml =
@@ -190,16 +350,50 @@
 									                    	mc.setPayloadXML( annotationBodyRdfXml);
                                                         //]]></script>
                                                 <call>
-                                                    <endpoint>
-                                                        <http uri-template="{uri.var.location}"/>
+                                                    <endpoint name="aggregateAnnotationsForExternalResources">
+                                                        <http method="post" uri-template="{uri.var.location}">
+                                                            <timeout>
+                                                                <duration>30000</duration>
+                                                                <responseAction>fault</responseAction>
+                                                            </timeout>
+                                                            <suspendOnFailure>
+                                                                <errorCodes>-1</errorCodes>
+                                                                <initialDuration>0</initialDuration>
+                                                                <progressionFactor>1.0</progressionFactor>
+                                                                <maximumDuration>0</maximumDuration>
+                                                            </suspendOnFailure>
+                                                            <markForSuspension>
+                                                                <errorCodes>-1</errorCodes>
+                                                            </markForSuspension>
+                                                        </http>
                                                     </endpoint>
                                                 </call>
+                                                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                                                    <then>
+                                                        <log category="WARN" level="full">
+                                                            <property expression="fn:concat('FAILED AGGREGATING ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR EXTERNAL RESOURCE ', get-property('RESOURCE_URI'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                        <drop/>
+                                                    </then>
+                                                    <else>
+                                                        <log>
+                                                            <property expression="fn:concat('AGGREGATED ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR EXTERNAL RESOURCE ', get-property('RESOURCE_URI'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                    </else>
+                                                </filter>
                                             </sequence>
                                         </target>
                                     </iterate>
                                     <iterate continueParent="true" expression="$body//forProxy/*">
                                         <target>
                                             <sequence>
+                                                <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
                                                 <property expression="fn:concat('&lt;', get-property('proxyUri'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                                                 <script language="js"><![CDATA[//
 	                                                        var annotationBodyRdfXml =
@@ -217,10 +411,43 @@
 									                    	mc.setPayloadXML( annotationBodyRdfXml);
                                                         //]]></script>
                                                 <call>
-                                                    <endpoint>
-                                                        <http uri-template="{uri.var.location}"/>
+                                                    <endpoint name="aggregateAnnotationsForExternalResourceProxies">
+                                                        <http method="post" uri-template="{uri.var.location}">
+                                                            <timeout>
+                                                                <duration>30000</duration>
+                                                                <responseAction>fault</responseAction>
+                                                            </timeout>
+                                                            <suspendOnFailure>
+                                                                <errorCodes>-1</errorCodes>
+                                                                <initialDuration>0</initialDuration>
+                                                                <progressionFactor>1.0</progressionFactor>
+                                                                <maximumDuration>0</maximumDuration>
+                                                            </suspendOnFailure>
+                                                            <markForSuspension>
+                                                                <errorCodes>-1</errorCodes>
+                                                            </markForSuspension>
+                                                        </http>
                                                     </endpoint>
                                                 </call>
+                                                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                                                    <then>
+                                                        <log category="WARN" level="full">
+                                                            <property expression="fn:concat('FAILED AGGREGATING ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR PROXY ', get-property('proxyUri'), ' OF EXTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                        <drop/>
+                                                    </then>
+                                                    <else>
+                                                        <log>
+                                                            <property expression="fn:concat('AGGREGATED ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR PROXY ', get-property('proxyUri'), ' OF EXTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                                            <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                                                        </log>
+                                                    </else>
+                                                </filter>
                                             </sequence>
                                         </target>
                                     </iterate>
@@ -234,5 +461,5 @@
             </sequence>
         </target>
     </clone>
-    <drop/>
+    <loopback/>
 </sequence>
