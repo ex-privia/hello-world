@@ -266,11 +266,6 @@
                                 <property name="mylog" value="***************************** CALLING BACK END: AGGREGATE EXTERNAL RESOURCE **************************"/>
                             </log>
                             <call>
-                                <endpoint>
-                                    <http uri-template="{uri.var.location}"/>
-                                </endpoint>
-                            </call>
-                            <call>
                                 <endpoint name="aggregateExternal">
                                     <http method="post" uri-template="{uri.var.location}">
                                         <timeout>
@@ -327,7 +322,12 @@
                                     <property name="Content-Type" scope="transport" type="STRING" value="application/rdf+xml"/>
                                     <property action="remove" name="Link" scope="transport"/>
                                     <!-- avoid setting the Slug parameter, thus letting RO API to choose annotation name -->
-                                    <property expression="$trp:Authorization" name="Authorization" scope="transport" type="STRING"/>
+                                    <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                                    <log level="custom">
+                                        <property name="BANNER" value="++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"/>
+                                        <property expression="get-property('AUTH')" name="AUTH"/>
+                                        <property expression="get-property('Authorization')" name="Authorization"/>
+                                    </log>
                                     <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
                                     <iterate continueParent="true" expression="$body//forResource/*">
                                         <target>
@@ -349,6 +349,11 @@
 									                    	annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
 									                    	mc.setPayloadXML( annotationBodyRdfXml);
                                                         //]]></script>
+                                                <log level="custom">
+                                                    <property name="BANNER1" value="++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"/>
+                                                    <property expression="get-property('AUTH')" name="AUTH1"/>
+                                                    <property expression="get-property('Authorization')" name="Authorization1"/>
+                                                </log>
                                                 <call>
                                                     <endpoint name="aggregateAnnotationsForExternalResources">
                                                         <http method="post" uri-template="{uri.var.location}">
