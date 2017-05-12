@@ -38,6 +38,7 @@
 						WHERE {\
 						<" + ro + "> ore:isDescribedBy ?RoManifest ;\
 									 ore:aggregates ?resource .\
+						OPTIONAL { [a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf }\
 						GRAPH ?RoManifest{\
 							?resource a ro:Resource .\
 							OPTIONAL { ?resource dct:creator ?creator}\
@@ -45,7 +46,6 @@
 							OPTIONAL { ?resource ro:name ?name}\
 							OPTIONAL { ?resource ro:filesize ?filesize}\
 							?proxy ore:proxyFor ?resource\
-							OPTIONAL { [a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf }\
 							OPTIONAL { ?annotation ro:annotatesAggregatedResource ?resource;\
 										ao:body ?titlebody.\
 								GRAPH ?titlebody{\
