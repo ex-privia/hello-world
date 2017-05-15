@@ -50,4 +50,13 @@
     <artifact name="4003" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
         <file>src/main/synapse-config/local-entries/4003.xml</file>
     </artifact>
+    <artifact name="CreateROs_AggregateROAnnotations" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/CreateROs_AggregateROAnnotations.xml</file>
+    </artifact>
+    <artifact name="CreateRos_SetMode" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/CreateRos_SetMode.xml</file>
+    </artifact>
+    <artifact name="CreateROs_AggregateResources" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/CreateROs_AggregateResources.xml</file>
+    </artifact>
 </artifacts>

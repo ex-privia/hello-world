@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="CreateRos_SetMode" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <filter xpath="$ctx:BODY_FOR_RESOURCES//mode">
+        <then>
+            <filter regex="PUBLIC" source="$ctx:BODY_FOR_RESOURCES//mode">
+                <then/>
+                <else>
+                    <log level="custom">
+                        <property name="mylog" value="***************************** CALLING BACK END: SETTING ACCESS RIGHT **************************"/>
+                        <property expression="$trp:Location" name="LOCATION"/>
+                    </log>
+                    <!--
+                                                The url of the access control operation is http://sandbox.rohub.org/rodl/accesscontrol/modes/
+                                                The request of the access control operation must be this (given the example client request):
+                                                
+                                                	POST /rodl/accesscontrol/modes/ HTTP/1.1
+													Authorization: Bearer 7d6df5f8-6b5c-4d88-95e1-da101dcee6f8
+													Content-Type: application/json
+													Content-Length: 67
+													Host: sandbox.rohub.org
+													Connection: Keep-Alive
+													User-Agent: Synapse-PT-HttpComponents-NIO
+													
+													{"ro":"http://sandbox.rohub.org/rodl/ROs/cde-20/","mode":"PRIVATE"}
+													
+													
+													Please note that the value of the "ro" field in the body of the request must be the URI of the RO,
+													and the value of the "mode" field must be equal to the value of the "mode" field in the client request.
+                                                -->
+                    <!-- Synthesize the body of the request with this template in "format" and assign variables through "args" directive -->
+                    <payloadFactory media-type="json">
+                        <format>
+						    {"ro":"$1","mode":"$2"}
+						</format>
+                        <args>
+                            <arg evaluator="xml" expression="get-property('RONAME')"/>
+                            <arg evaluator="xml" expression="$ctx:BODY_FOR_RESOURCES//mode"/>
+                        </args>
+                    </payloadFactory>
+                    <!-- disable default http-transfer method for synapse (Transfer-Encoding: chunked) -->
+                    <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                    <!-- set ContentType http header field to "application/json" -->
+                    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                    <!-- set Authorization http header field -->
+                    <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                    <!--  remaining http headers: Host, Connection, User-Agent, Content-Length are automatically set, so no more directive are needed. (Anyway they are not strictly needed by the back-end.) -->
+                    <!-- please note that two more http headers will be sent to the back-end:
+                                                	Content-disposition: attachment; filename=".ro/manifest.rdf"
+													Location: http://sandbox.rohub.org/rodl/ROs/cde-20/
+													
+												This is because they have not been deleted from the context and they are there from the first response from the back-end.
+												Anyway, they are not dangerous, so no deletion is performed.
+                                                 -->
+                    <!-- invoke the access control operation with the request just synthesized -->
+                    <call>
+                        <endpoint>
+                            <http uri-template="http://sandbox.rohub.org/rodl/accesscontrol/modes/"/>
+                        </endpoint>
+                    </call>
+                </else>
+            </filter>
+        </then>
+        <else/>
+    </filter>
+    <drop/>
+</sequence>
