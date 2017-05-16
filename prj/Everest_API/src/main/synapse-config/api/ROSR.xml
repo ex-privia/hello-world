@@ -2,10 +2,60 @@
 <api context="/everest" name="ROSR" xmlns="http://ws.apache.org/ns/synapse">
     <resource methods="POST" url-mapping="/ROs">
         <inSequence>
+            <property expression="get-property('MessageID')" name="REQUEST_ID" scope="default" type="STRING"/>
+            <log>
+                <property name="STEP" value="OPERATION STARTED"/>
+                <property expression="get-property('axis2', 'REMOTE_HOST')" name="REMOTE_HOST"/>
+                <property expression="get-property('axis2', 'REMOTE_ADDR')" name="REMOTE_ADDR"/>
+            </log>
             <sequence key="createROsin"/>
         </inSequence>
-        <outSequence/>
-        <faultSequence/>
+        <outSequence>
+            <log level="custom">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY"/>
+                <property expression="get-property('REQUEST_ID')" name="MessageID"/>
+            </log>
+            <respond/>
+        </outSequence>
+        <faultSequence>
+            <filter xpath="get-property('REQUEST_ID')=$header/wsa:MessageID">
+                <then>
+                    <log category="ERROR" level="full">
+                        <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                        <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+                        <property name="STEP" value="OPERATION ENDED EXCEPTIONALLY"/>
+                    </log>
+                    <property name="HTTP_SC" scope="axis2" type="STRING" value="500"/>
+                    <payloadFactory media-type="json">
+                        <format>
+						{
+							"RequestID": "$1",
+							"Category": "ESB",
+							"Code": "$2",
+							"Msg": "$3"
+						}
+					</format>
+                        <args>
+                            <arg evaluator="xml" expression="get-property('MessageID')"/>
+                            <arg evaluator="xml" expression="get-property('ERROR_CODE')"/>
+                            <arg evaluator="xml" expression="get-property('ERROR_MESSAGE')"/>
+                        </args>
+                    </payloadFactory>
+                    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                    <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+                    <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+                    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                    <respond/>
+                </then>
+                <else>
+                    <log category="ERROR" level="full">
+                        <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+                        <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+                        <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                    </log>
+                </else>
+            </filter>
+        </faultSequence>
     </resource>
     <resource methods="POST" url-mapping="/">
         <inSequence>

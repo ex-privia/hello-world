@@ -7,25 +7,13 @@
         <target type="body"/>
     </enrich>
     <script language="js"><![CDATA[//
-												java.lang.System.out.println( "%%%%*******************************%%%%%%" + mc.getPayloadXML().toXMLString());
-												//]]></script>
-    <script language="js"><![CDATA[//
-												java.lang.System.out.println( "%%%%*******************************%%%%%%" + mc.getPayloadXML().semanticAnnotation.toXMLString());
-												//]]></script>
-    <script language="js"><![CDATA[//
 					var second = <second/>;
 					second.appendChild( mc.getPayloadXML().semanticAnnotation);
 					mc.setPayloadXML( second);
 				//]]></script>
     <filter xpath=".[/*/*/semanticAnnotation]">
         <then>
-            <script language="js"><![CDATA[//
-												java.lang.System.out.println( "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" + mc.getPayloadXML().toXMLString());
-												//]]></script>
             <script function="transform" key="transform" language="js"/>
-            <script language="js"><![CDATA[//
-												java.lang.System.out.println( "_%%%%%%%%%%%%%%%%%%%_%%%%%%%%%%%%%%%%%%%_%%%%%%%%%%%%%%%%%%%%%%%%%%%%%_%%" + mc.getPayloadXML().toXMLString());
-												//]]></script>
             <filter xpath=".[$body//forResource or $body//forProxy]">
                 <then>
                     <property action="remove" name="Location" scope="transport"/>
@@ -38,6 +26,7 @@
                     <iterate continueParent="true" expression="$body//forResource/*">
                         <target>
                             <sequence>
+                                <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
                                 <property expression="fn:concat('&lt;', get-property('resourceUri'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
                                 <script language="js"><![CDATA[//
 	                                                        var annotationBodyRdfXml =
@@ -58,7 +47,7 @@
                                     <endpoint name="aggregateAnnotationsForRo">
                                         <http method="post" uri-template="{uri.var.location}">
                                             <timeout>
-                                                <duration>30000</duration>
+                                                <duration>90000</duration>
                                                 <responseAction>fault</responseAction>
                                             </timeout>
                                             <suspendOnFailure>
@@ -76,7 +65,7 @@
                                 <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
                                     <then>
                                         <log category="WARN" level="full">
-                                            <property expression="fn:concat('FAILED AGGREGATING ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                            <property expression="fn:concat('FAILED AGGREGATING ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR THE RO ', get-property('uri.var.location'))" name="APPL"/>
                                             <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
@@ -84,13 +73,14 @@
                                     </then>
                                     <else>
                                         <log>
-                                            <property expression="fn:concat('AGGREGATED ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR INTERNAL RESOURCE ', get-property('RESOURCE_NAME'), ' IN THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                                            <property expression="fn:concat('AGGREGATED ANNOTATION WITH BODY ', get-property('RDF_PROPERTY'), ' FOR THE RO ', get-property('uri.var.location'))" name="APPL"/>
                                             <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                                         </log>
                                     </else>
                                 </filter>
+                                <drop/>
                             </sequence>
                         </target>
                     </iterate>

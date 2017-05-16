@@ -5,6 +5,25 @@
         <target property="BODY_FOR_RESOURCES" type="property"/>
     </enrich>
     <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <filter xpath="not($ctx:AUTH)">
+        <then>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <script language="js"><![CDATA[//
+				mc.getEnvelope().getBody().getFirstElement().detach();
+			//]]></script>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
     <!--++
         				It is expected that the client calls this operation with this request:
         				
@@ -75,46 +94,77 @@
         <property name="mylog" value="***************************** CALL: CREATE A NEW RESEARCH OBJECT **************************"/>
     </log>
     <!-- the request has been so synthesized and the back-end can be invoked right now -->
+    <property expression="$trp:Slug" name="SLUG" scope="default" type="STRING"/>
+    <property name="uri.var.resource" scope="default" type="STRING" value="http://sandbox.rohub.org/rodl/ROs"/>
     <call>
-        <endpoint>
-            <http uri-template="http://sandbox.rohub.org/rodl/"/>
+        <endpoint name="createRo">
+            <http method="post" uri-template="{uri.var.resource}">
+                <timeout>
+                    <duration>90000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>-1</errorCodes>
+                    <initialDuration>0</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
+                    <maximumDuration>0</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>-1</errorCodes>
+                </markForSuspension>
+            </http>
         </endpoint>
     </call>
-    <!-- The expected response is this:
-
-	            HTTP/1.1 201 Created
-				Date: Fri, 13 Jan 2017 14:50:55 GMT
-				Server: Apache
-				Location: http://sandbox.rohub.org/rodl/ROs/cde-20/
-				Content-disposition: attachment; filename=".ro/manifest.rdf
-				Content-Length: 4354
-				Keep-Alive: timeout=200, max=100
-				Connection: Keep-Alive
-				Content-Type: application/rdf+xml
-				
-				here the body (that is not needed)
-            
-             -->
-    <!-- save in a property (RONAME) the URI of the just created RO got in the Location http header of the response -->
-    <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
-    <script language="js"><![CDATA[//
-            	var urldecoded = decodeURIComponent( mc.getProperty("RONAME"));
-            	mc.setProperty("LOCATION", urldecoded);
-            //]]></script>
-    <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
+    <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+        <then>
+            <log category="ERROR" level="full">
+                <property expression="fn:concat('FAILED CREATING RO WITH SLUG ', get-property('SLUG'))" name="APPL"/>
+                <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+            </log>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+            <payloadFactory media-type="json">
+                <format>
+				{
+					"RequestID": "$1",
+					"Category": "ROHUB",
+					"Code": "9998"
+				}
+			</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('MessageID')"/>
+                </args>
+            </payloadFactory>
+            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+            <property expression="get-property('MessageID')" name="X-Request-ID" scope="transport" type="STRING"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <respond/>
+        </then>
+        <else>
+            <property expression="$trp:Location" name="RONAME" scope="default" type="STRING"/>
+            <script language="js"><![CDATA[//
+		            	var urldecoded = decodeURIComponent( mc.getProperty("RONAME"));
+		            	mc.setProperty("LOCATION", urldecoded);
+		            //]]></script>
+            <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
+            <log>
+                <property expression="fn:concat('CREATED RO ', get-property('uri.var.location'))" name="APPL"/>
+                <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+            </log>
+        </else>
+    </filter>
     <clone continueParent="true">
         <target sequence="CreateROs_AggregateROAnnotations"/>
     </clone>
-    <!-- keep on processing if the response status code is what is expected to be in case of correct back end response, that is 201 in this case.
-            In the else branch (now missing) exceptional response must be handled properly!
-            -->
-    <filter regex="201" source="get-property('axis2', 'HTTP_SC')">
-        <then>
-            <log level="custom">
-                <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
-                <property expression="$trp:Location" name="LOCATION"/>
-            </log>
-            <!--
+    <log level="custom">
+        <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
+        <property expression="$trp:Location" name="LOCATION"/>
+    </log>
+    <!--
                     	do the next invocation to the backend, if there is a "mode" field in the client request:
 						2. Optional setting public/private visibility mode (access rights).
                     	Next invocations are performed in parallel taking advantage of backend computing power, while at the same time, in order to minimize user-perceived latency, the user will receive the response to her request using just the info from the response of the first invocation to the back end.
@@ -122,10 +172,10 @@
                     	So spawn a new execution thread for this invocation.
 
                     -->
-            <clone continueParent="true">
-                <target sequence="CreateRos_SetMode"/>
-            </clone>
-            <!--++
+    <clone continueParent="true">
+        <target sequence="CreateRos_SetMode"/>
+    </clone>
+    <!--++
                         Let's call the RO API to annotate the just created RO with title and description (see REQUEST below), and let's reply to the client (see RESPONSE below).
 
 						REQUEST
@@ -169,35 +219,27 @@
 					
 						Please note that ro_name field value in the json body must be the url given by the value of the Location http header in the response of the previous call to the RO API for the annotation.
                      -->
-            <!-- spawn a separate thread to aggregate annotations (see below for the main thread) -->
-            <clone continueParent="true">
-                <target sequence="CreateROs_AggregateResources"/>
-            </clone>
-            <!-- main thread replying to the client without waiting for the response by the aggregation call -->
-            <!-- no http header must be set explicitly. Those coming from the response of the preceding call must be removed -->
-            <!-- (WSO2ESB) There is no way to delete multiple headers with the same field name, indeed one is left from the previous response from roAPI to the next to the client: Link: <http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/>; rel="http://purl.org/ao/annotatesResource"-->
-            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
-            <!-- next directive is to avoid using Transfer-Encoding: chunked -->
-            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
-            <!-- set the json payload -->
-            <payloadFactory media-type="json">
-                <format>{"ro_name":"$1"}</format>
-                <args>
-                    <arg evaluator="xml" expression="get-property('RONAME')"/>
-                </args>
-            </payloadFactory>
-            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
-            <log level="custom">
-                <property name="mylog" value="*********************** REPLYING TO THE CLIENT ********************"/>
-            </log>
-            <respond/>
-        </then>
-        <else>
-            <log level="full"/>
-            <log level="custom">
-                <property expression="get-property('axis2', 'HTTP_SC')" name="STATUS_CODE"/>
-            </log>
-            <respond/>
-        </else>
-    </filter>
+    <!-- spawn a separate thread to aggregate annotations (see below for the main thread) -->
+    <clone continueParent="true">
+        <target sequence="CreateROs_AggregateResources"/>
+    </clone>
+    <!-- main thread replying to the client without waiting for the response by the aggregation call -->
+    <!-- no http header must be set explicitly. Those coming from the response of the preceding call must be removed -->
+    <!-- (WSO2ESB) There is no way to delete multiple headers with the same field name, indeed one is left from the previous response from roAPI to the next to the client: Link: <http://sandbox.wf4ever-project.org/rodl/ROs/OneMoreRo-14/>; rel="http://purl.org/ao/annotatesResource"-->
+    <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+    <!-- next directive is to avoid using Transfer-Encoding: chunked -->
+    <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+    <property expression="get-property('REQUEST_ID')" name="X-Request-ID" scope="transport" type="STRING"/>
+    <!-- set the json payload -->
+    <payloadFactory media-type="json">
+        <format>{"ro_name":"$1"}</format>
+        <args>
+            <arg evaluator="xml" expression="get-property('RONAME')"/>
+        </args>
+    </payloadFactory>
+    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+    <log level="custom">
+        <property name="mylog" value="*********************** REPLYING TO THE CLIENT ********************"/>
+    </log>
+    <loopback/>
 </sequence>

@@ -28,6 +28,7 @@
 													and the value of the "mode" field must be equal to the value of the "mode" field in the client request.
                                                 -->
                     <!-- Synthesize the body of the request with this template in "format" and assign variables through "args" directive -->
+                    <property expression="$ctx:BODY_FOR_RESOURCES//mode" name="MODE" scope="default" type="STRING"/>
                     <payloadFactory media-type="json">
                         <format>
 						    {"ro":"$1","mode":"$2"}
@@ -52,11 +53,44 @@
 												Anyway, they are not dangerous, so no deletion is performed.
                                                  -->
                     <!-- invoke the access control operation with the request just synthesized -->
+                    <property name="uri.var.location" scope="default" type="STRING" value="http://sandbox.rohub.org/rodl/accesscontrol/modes/"/>
                     <call>
-                        <endpoint>
-                            <http uri-template="http://sandbox.rohub.org/rodl/accesscontrol/modes/"/>
+                        <endpoint name="setVisibilityMode">
+                            <http method="post" uri-template="{uri.var.location}">
+                                <timeout>
+                                    <duration>90000</duration>
+                                    <responseAction>fault</responseAction>
+                                </timeout>
+                                <suspendOnFailure>
+                                    <errorCodes>-1</errorCodes>
+                                    <initialDuration>0</initialDuration>
+                                    <progressionFactor>1.0</progressionFactor>
+                                    <maximumDuration>0</maximumDuration>
+                                </suspendOnFailure>
+                                <markForSuspension>
+                                    <errorCodes>-1</errorCodes>
+                                </markForSuspension>
+                            </http>
                         </endpoint>
                     </call>
+                    <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+                        <then>
+                            <log category="WARN" level="full">
+                                <property expression="fn:concat('FAILED SETTING VISIBILITY MODE OF THE RO ', get-property('uri.var.location'), ' TO ', get-property('MODE'))" name="APPL"/>
+                                <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                                <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                            </log>
+                        </then>
+                        <else>
+                            <log>
+                                <property expression="fn:concat('SET VISIBILITY MODE OF THE RO ', get-property('uri.var.location'), ' TO ', get-property('MODE'))" name="APPL"/>
+                                <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                                <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                                <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+                            </log>
+                        </else>
+                    </filter>
                 </else>
             </filter>
         </then>

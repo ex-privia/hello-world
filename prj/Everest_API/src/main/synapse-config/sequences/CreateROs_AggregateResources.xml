@@ -40,9 +40,8 @@
                                             	//var fileName = mc.getEnvelope().getBody().getChildElements().next().getLocalName();
                                             	mc.setProperty("fileName", fileName);
 												//var fileContent = mc.getEnvelope().getBody().getFirstElement().getText();
-						                   		java.lang.System.out.println("-------------------------------- fileName = " + fileName);
+
 							                    var decoded = new java.lang.String( org.apache.axiom.util.base64.Base64Utils.decode( fileContent));
-						                   		java.lang.System.out.println("-------------------------------- decoded = " + decoded);
 							                    mc.setPayloadXML(
                                                     <ms11:text xmlns:ms11="http://ws.apache.org/commons/ns/payload">{decoded}</ms11:text>
 							                    );
@@ -75,7 +74,7 @@
                     <endpoint name="aggregateInternalResources">
                         <http method="post" uri-template="{uri.var.location}">
                             <timeout>
-                                <duration>30000</duration>
+                                <duration>90000</duration>
                                 <responseAction>fault</responseAction>
                             </timeout>
                             <suspendOnFailure>
@@ -98,6 +97,7 @@
                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                         </log>
+                        <drop/>
                     </then>
                     <else>
                         <log>
@@ -116,9 +116,6 @@
                     <target type="body"/>
                 </enrich>
                 <script function="transform" key="transform" language="js"/>
-                <script language="js"><![CDATA[//
-												java.lang.System.out.println( mc.getPayloadXML().toXMLString());
-												//]]></script>
                 <filter xpath=".[$body//forResource or $body//forProxy]">
                     <then>
                         <property action="remove" name="Location" scope="transport"/>
@@ -152,7 +149,7 @@
                                         <endpoint name="aggregateAnnotationsForInternalResources">
                                             <http method="post" uri-template="{uri.var.location}">
                                                 <timeout>
-                                                    <duration>30000</duration>
+                                                    <duration>90000</duration>
                                                     <responseAction>fault</responseAction>
                                                 </timeout>
                                                 <suspendOnFailure>
@@ -185,6 +182,7 @@
                                             </log>
                                         </else>
                                     </filter>
+                                    <drop/>
                                 </sequence>
                             </target>
                         </iterate>
@@ -212,7 +210,7 @@
                                         <endpoint name="aggregateAnnotationsForInternalResourceProxies">
                                             <http method="post" uri-template="{uri.var.location}">
                                                 <timeout>
-                                                    <duration>30000</duration>
+                                                    <duration>90000</duration>
                                                     <responseAction>fault</responseAction>
                                                 </timeout>
                                                 <suspendOnFailure>
@@ -245,12 +243,14 @@
                                             </log>
                                         </else>
                                     </filter>
+                                    <drop/>
                                 </sequence>
                             </target>
                         </iterate>
                     </then>
                     <else/>
                 </filter>
+                <drop/>
             </sequence>
         </target>
         <!-- after this "iterate" directive due to xPath expression terminating in "*" the root-->
@@ -318,7 +318,7 @@
                     <endpoint name="aggregateExternal">
                         <http method="post" uri-template="{uri.var.location}">
                             <timeout>
-                                <duration>30000</duration>
+                                <duration>90000</duration>
                                 <responseAction>fault</responseAction>
                             </timeout>
                             <suspendOnFailure>
@@ -341,6 +341,7 @@
                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                         </log>
+                        <drop/>
                     </then>
                     <else>
                         <log>
@@ -359,9 +360,6 @@
                     <target type="body"/>
                 </enrich>
                 <script function="transform" key="transform" language="js"/>
-                <script language="js"><![CDATA[//
-												java.lang.System.out.println( mc.getPayloadXML().toXMLString());
-												//]]></script>
                 <filter xpath=".[$body//forResource or $body//forProxy]">
                     <then>
                         <property action="remove" name="Location" scope="transport"/>
@@ -395,7 +393,7 @@
                                         <endpoint name="aggregateAnnotationsForExternalResources">
                                             <http method="post" uri-template="{uri.var.location}">
                                                 <timeout>
-                                                    <duration>30000</duration>
+                                                    <duration>90000</duration>
                                                     <responseAction>fault</responseAction>
                                                 </timeout>
                                                 <suspendOnFailure>
@@ -428,6 +426,7 @@
                                             </log>
                                         </else>
                                     </filter>
+                                    <drop/>
                                 </sequence>
                             </target>
                         </iterate>
@@ -455,7 +454,7 @@
                                         <endpoint name="aggregateAnnotationsForExternalResourceProxies">
                                             <http method="post" uri-template="{uri.var.location}">
                                                 <timeout>
-                                                    <duration>30000</duration>
+                                                    <duration>90000</duration>
                                                     <responseAction>fault</responseAction>
                                                 </timeout>
                                                 <suspendOnFailure>
@@ -488,12 +487,14 @@
                                             </log>
                                         </else>
                                     </filter>
+                                    <drop/>
                                 </sequence>
                             </target>
                         </iterate>
                     </then>
                     <else/>
                 </filter>
+                <drop/>
             </sequence>
         </target>
     </iterate>
@@ -561,8 +562,40 @@
     <!-- call the annotation operation on the ro api -->
     <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
     <call>
-        <endpoint>
-            <http uri-template="{uri.var.location}"/>
+        <endpoint name="setTitleAndDescription">
+            <http method="post" uri-template="{uri.var.location}">
+                <timeout>
+                    <duration>90000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>-1</errorCodes>
+                    <initialDuration>0</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
+                    <maximumDuration>0</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>-1</errorCodes>
+                </markForSuspension>
+            </http>
         </endpoint>
     </call>
+    <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
+        <then>
+            <log category="WARN" level="full">
+                <property expression="fn:concat('FAILED SETTING TITLE AND DESCRIPTION OF THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
+                <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+            </log>
+        </then>
+        <else>
+            <log>
+                <property expression="fn:concat('SET TITLE AND DESCRIPTION OF THE RO ', get-property('uri.var.location'))" name="APPL"/>
+                <property name="STEP" value="SUBOPERATION ENDED ORDINARILY"/>
+                <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
+                <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
+            </log>
+        </else>
+    </filter>
 </sequence>
