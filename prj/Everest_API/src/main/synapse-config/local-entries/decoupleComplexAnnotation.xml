@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="decoupleComplexAnnotation" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[//
+	function decoupleComplexAnnotation( mc){
+		var annotationBodyRdfXml =
+			<rdf:RDF
+				xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+			/>;
+		var resourceUri = mc.getProperty('resourceUri');
+		var DescriptionBodyRdfXml =
+			<rdf:Description rdf:about={ resourceUri}
+            	xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+			/>;
+		var prop = mc.getPayloadXML();
+		var setOfSubProps = prop.*.*;
+		if( setOfSubProps.length() == 0){
+			java.lang.System.out.println("SIMPLE ANNOTATION; len " + mc.getPayloadXML().*.*.length() + "; mc.getPayloadXML() = " + mc.getPayloadXML());
+			DescriptionBodyRdfXml.appendChild( prop);
+			annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
+		}else{
+			java.lang.System.out.println("COMPLEX ANNOTATION; len " + mc.getPayloadXML().*.*.length() + "; mc.getPayloadXML() = " + mc.getPayloadXML());
+			var rdf = new Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+			prop.@rdf::resource = "/" + java.lang.String( resourceUri + prop.toXMLString()).hashCode();
+			delete prop.*;
+			DescriptionBodyRdfXml.appendChild( prop);
+			annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
+			for each ( var subProp in setOfSubProps){
+			var subDescriptionBodyRdfXml =
+				<rdf:Description rdf:about={ prop.@rdf::resource}
+	            	xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+				/>;
+				subDescriptionBodyRdfXml.appendChild( subProp);
+				annotationBodyRdfXml.* += subDescriptionBodyRdfXml;
+			}
+		}
+		mc.setPayloadXML( annotationBodyRdfXml);
+		java.lang.System.out.println( "mc after decoupling = " + mc.getPayloadXML().toXMLString());
+	}
+//]]></localEntry>

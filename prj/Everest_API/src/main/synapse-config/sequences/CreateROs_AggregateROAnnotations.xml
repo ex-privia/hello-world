@@ -28,21 +28,7 @@
                             <sequence>
                                 <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
                                 <property expression="fn:concat('&lt;', get-property('resourceUri'), '>; rel=&quot;http://purl.org/ao/annotatesResource&quot;')" name="Link" scope="transport" type="STRING"/>
-                                <script language="js"><![CDATA[//
-	                                                        var annotationBodyRdfXml =
-																<rdf:RDF
-								                    				xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
-							                    				/>
-									                    	;
-															var DescriptionBodyRdfXml =
-						                    					<rdf:Description rdf:about={ mc.getProperty('resourceUri')}
-								                    				xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
-						                    					/>
-								                    		;
-															DescriptionBodyRdfXml.appendChild( mc.getPayloadXML());
-									                    	annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
-									                    	mc.setPayloadXML( annotationBodyRdfXml);
-                                                        //]]></script>
+                                <script function="decoupleComplexAnnotation" key="decoupleComplexAnnotation" language="js"/>
                                 <call>
                                     <endpoint name="aggregateAnnotationsForRo">
                                         <http method="post" uri-template="{uri.var.location}">

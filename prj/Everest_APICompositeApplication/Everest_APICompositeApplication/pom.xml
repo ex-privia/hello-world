@@ -30,6 +30,7 @@
     <com.example.Everest_API.sequence_._updatePermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updatePermissionsIN>
     <com.example.Everest_API.sequence_._AddResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddResourcesIN>
     <com.example.Everest_API.sequence_._GetListIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._GetListIN>
+    <com.example.Everest_API.local-entry_._decoupleComplexAnnotation>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._decoupleComplexAnnotation>
   </properties>
   <dependencies>
     <dependency>
@@ -143,6 +144,12 @@
     <dependency>
       <groupId>com.example.Everest_API.api</groupId>
       <artifactId>ROSR</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>decoupleComplexAnnotation</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
