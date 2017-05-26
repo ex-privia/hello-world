@@ -19,7 +19,7 @@
 		}else{
 			java.lang.System.out.println("COMPLEX ANNOTATION; len " + mc.getPayloadXML().*.*.length() + "; mc.getPayloadXML() = " + mc.getPayloadXML());
 			var rdf = new Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-			prop.@rdf::resource = "/" + java.lang.String( resourceUri + prop.toXMLString()).hashCode();
+			prop.@rdf::resource = "./" + java.lang.String( resourceUri + prop.toXMLString()).hashCode();
 			delete prop.*;
 			DescriptionBodyRdfXml.appendChild( prop);
 			annotationBodyRdfXml.appendChild( DescriptionBodyRdfXml);
