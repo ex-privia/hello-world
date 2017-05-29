@@ -147,56 +147,67 @@
 							PREFIX ro: <http://purl.org/wf4ever/ro#>\
 							PREFIX foaf: <http://xmlns.com/foaf/0.1/>\
 							PREFIX afn: <http://jena.hpl.hp.com/ARQ/function#>\
-							SELECT ?vocabulary ?term ?value ?annotatedSince ?annotator ?annotatorName ?created ?creator ?creatorName ?annotates ?annotation ?body\
-							WHERE {\
-								VALUES (?ro ?res) {(<" + ro + "> <" + resource + ">)}\
-								?ro ore:isDescribedBy ?manifest\
-								GRAPH ?manifest{\
-									{\
-										?annotation ro:annotatesAggregatedResource ?res.\
-										?annotation ao:body ?body.\
-										GRAPH ?body{\
-											?res ?metadata ?value\
-										}\
-										BIND( afn:namespace( ?metadata) AS ?vocabulary)\
-										BIND( afn:localname( ?metadata) AS ?term)\
-										OPTIONAL { ?annotation dct:created ?annotatedSince;\
-												dct:creator ?annotator.\
-											OPTIONAL{\
-													?annotator foaf:name ?annotatorName\
+							SELECT (SAMPLE (?vocabulary1) AS ?vocabulary) (SAMPLE (?term1) AS ?term) (SAMPLE (?value1) AS ?value) (SAMPLE (?annotatedSince1) AS ?annotatedSince) (SAMPLE (?annotator1) AS ?annotator) (SAMPLE (?annotatorName1) AS ?annotatorName) (SAMPLE (?created1) AS ?created) (SAMPLE (?creator1) AS ?creator) (SAMPLE (?creatorName1) AS ?creatorName) (SAMPLE (?annotates1) AS ?annotates) (SAMPLE (?annotation1) AS ?annotation) (SAMPLE (?body1) AS ?body) (CONCAT( \"{\", GROUP_CONCAT( ?z; SEPARATOR=\", \"), \"}\") AS ?pairSet)\
+							WHERE{\
+								SELECT ?vocabulary1 ?term1 ?value1 ?annotatedSince1 ?annotator1 ?annotatorName1 ?created1 ?creator1 ?creatorName1 ?annotates1 ?annotation1 ?body1 ?z\
+								WHERE {\
+									VALUES (?ro ?res) {(<" + ro + "> <" + resource + ">)}\
+									?ro ore:isDescribedBy ?manifest\
+									GRAPH ?manifest{\
+										{\
+											?annotation1 ro:annotatesAggregatedResource ?res.\
+											?annotation1 ao:body ?body1.\
+											GRAPH ?body1{\
+												?res ?metadata ?value1\
+												OPTIONAL{\
+													?value1 ?x ?y\
+													BIND( CONCAT( \"'\", STR(?x), \"': '\", STR(?y), \"'\") AS ?z)\
 												}\
-										}\
-										OPTIONAL { ?body dct:created ?created;\
-												dct:creator ?creator.\
-											OPTIONAL{\
-													?creator foaf:name ?creatorName\
+											}\
+											BIND( afn:namespace( ?metadata) AS ?vocabulary1)\
+											BIND( afn:localname( ?metadata) AS ?term1)\
+											OPTIONAL { ?annotation1 dct:created ?annotatedSince1;\
+													dct:creator ?annotator1.\
+												OPTIONAL{\
+														?annotator1 foaf:name ?annotatorName1\
+													}\
+											}\
+											OPTIONAL { ?body1 dct:created ?created1;\
+													dct:creator ?creator1.\
+												OPTIONAL{\
+														?creator1 foaf:name ?creatorName1\
+													}\
+											}\
+										}UNION{\
+											?proxy ore:proxyFor ?res.\
+											?annotation1 ro:annotatesAggregatedResource ?proxy.\
+											?annotation1 ao:body ?body1.\
+											GRAPH ?body1{\
+												?proxy ?metadata ?value1\
+												OPTIONAL{\
+													?value1 ?x ?y\
+													BIND( CONCAT( \"'\", STR(?x), \"': '\", STR(?y), \"'\") AS ?z)\
 												}\
+											}\
+											BIND( afn:namespace( ?metadata) AS ?vocabulary1)\
+											BIND( afn:localname( ?metadata) AS ?term1)\
+											OPTIONAL { ?annotation1 dct:created ?annotatedSince1;\
+													dct:creator ?annotator1.\
+												OPTIONAL{\
+														?annotator1 foaf:name ?annotatorName1\
+													}\
+											}\
+											OPTIONAL { ?body1 dct:created ?created1;\
+													dct:creator ?creator1.\
+												OPTIONAL{\
+														?creator1 foaf:name ?creatorName1\
+													}\
+											}\
+											BIND( \"proxy\" AS ?annotates1)\
 										}\
-									}UNION{\
-										?proxy ore:proxyFor ?res.\
-										?annotation ro:annotatesAggregatedResource ?proxy.\
-										?annotation ao:body ?body.\
-										GRAPH ?body{\
-											?proxy ?metadata ?value\
-										}\
-										BIND( afn:namespace( ?metadata) AS ?vocabulary)\
-										BIND( afn:localname( ?metadata) AS ?term)\
-										OPTIONAL { ?annotation dct:created ?annotatedSince;\
-												dct:creator ?annotator.\
-											OPTIONAL{\
-													?annotator foaf:name ?annotatorName\
-												}\
-										}\
-										OPTIONAL { ?body dct:created ?created;\
-												dct:creator ?creator.\
-											OPTIONAL{\
-													?creator foaf:name ?creatorName\
-												}\
-										}\
-										BIND( \"proxy\" AS ?annotates)\
 									}\
 								}\
-							} " + orderBy + "\
+							} GROUP BY ?value1\ " + orderBy + "\
 						";
 					}else{
 						var orderBy = "ORDER BY ?term ?vocabulary ?annotatedSince ?annotatorName";
@@ -210,32 +221,39 @@
 							PREFIX ro: <http://purl.org/wf4ever/ro#>\
 							PREFIX foaf: <http://xmlns.com/foaf/0.1/>\
 							PREFIX afn: <http://jena.hpl.hp.com/ARQ/function#>\
-							SELECT ?vocabulary ?term ?value ?annotatedSince ?annotator ?annotatorName ?created ?creator ?creatorName ?annotation ?body\
-							WHERE {\
-								VALUES (?ro) {(<" + ro + ">)}\
-								?ro ore:isDescribedBy ?manifest\
-								GRAPH ?manifest{\
-									?annotation ro:annotatesAggregatedResource ?ro.\
-									?annotation ao:body ?body.\
-									GRAPH ?body{\
-										?ro ?metadata ?value\
-									}\
-									BIND( afn:namespace( ?metadata) AS ?vocabulary)\
-									BIND( afn:localname( ?metadata) AS ?term)\
-									OPTIONAL { ?annotation dct:created ?annotatedSince;\
-											dct:creator ?annotator.\
-										OPTIONAL{\
-												?annotator foaf:name ?annotatorName\
-											}\
-									}\
-									OPTIONAL { ?body dct:created ?created;\
-											dct:creator ?creator.\
-										OPTIONAL{\
-												?creator foaf:name ?creatorName\
-											}\
+							SELECT (SAMPLE (?vocabulary1) AS ?vocabulary) (SAMPLE (?term1) AS ?term) (SAMPLE (?value1) AS ?value) (SAMPLE (?annotatedSince1) AS ?annotatedSince) (SAMPLE (?annotator1) AS ?annotator) (SAMPLE (?annotatorName1) AS ?annotatorName) (SAMPLE (?created1) AS ?created) (SAMPLE (?creator1) AS ?creator) (SAMPLE (?creatorName1) AS ?creatorName) (SAMPLE (?annotation1) AS ?annotation) (SAMPLE (?body1) AS ?body) (CONCAT( \"{\", GROUP_CONCAT( ?z; SEPARATOR=\", \"), \"}\") AS ?pairSet)\
+							WHERE{\
+								SELECT ?vocabulary1 ?term1 ?value1 ?annotatedSince1 ?annotator1 ?annotatorName1 ?created1 ?creator1 ?creatorName1 ?annotation1 ?body1 ?z\
+								WHERE {\
+									VALUES (?ro) {(<" + ro + ">)}\
+									?ro ore:isDescribedBy ?manifest\
+									GRAPH ?manifest{\
+										?annotation1 ro:annotatesAggregatedResource ?ro.\
+										?annotation1 ao:body ?body1.\
+										GRAPH ?body1{\
+											?ro ?metadata ?value1\
+												OPTIONAL{\
+													?value1 ?x ?y\
+													BIND( CONCAT( \"'\", STR(?x), \"': '\", STR(?y), \"'\") AS ?z)\
+												}\
 										}\
+										BIND( afn:namespace( ?metadata) AS ?vocabulary1)\
+										BIND( afn:localname( ?metadata) AS ?term1)\
+										OPTIONAL { ?annotation1 dct:created ?annotatedSince1;\
+												dct:creator ?annotator1.\
+											OPTIONAL{\
+													?annotator1 foaf:name ?annotatorName1\
+												}\
+										}\
+										OPTIONAL { ?body1 dct:created ?created1;\
+												dct:creator ?creator1.\
+											OPTIONAL{\
+													?creator1 foaf:name ?creatorName1\
+												}\
+											}\
+									}\
 								}\
-							} " + orderBy + "\
+							} GROUP BY ?value1\ " + orderBy + "\
 						";
 					}
 				}
