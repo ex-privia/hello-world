@@ -13,13 +13,21 @@
     <com.example.Everest_API.local-entry_._transform>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transform>
     <com.example.Everest_API.sequence_._generalFault>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._generalFault>
     <com.example.Everest_API.sequence_._getPermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getPermissionsIN>
-    <com.example.Everest_API.sequence_._CreateROs_AggregateResources>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateROs_AggregateResources>
+    <com.example.Everest_API.sequence_._Metadata_RoAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_RoAnnotations>
+    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForResource>
     <com.example.Everest_API.sequence_._CreateRos_SetMode>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateRos_SetMode>
     <com.example.Everest_API.sequence_._updateRoModesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updateRoModesIN>
+    <com.example.Everest_API.sequence_._CreateROs_AggregateResources>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateROs_AggregateResources>
+    <com.example.Everest_API.local-entry_._transformAnnotationForRO>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transformAnnotationForRO>
+    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForResourceProxy>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForResourceProxy>
+    <com.example.Everest_API.local-entry_._4008>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4008>
     <com.example.Everest_API.local-entry_._4007>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4007>
+    <com.example.Everest_API.local-entry_._setGetProxyQueryForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetProxyQueryForResource>
     <com.example.Everest_API.local-entry_._4006>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4006>
     <com.example.Everest_API.local-entry_._4004>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4004>
     <com.example.Everest_API.local-entry_._4003>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4003>
+    <com.example.Everest_API.sequence_._Metadata_ResourceAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_ResourceAnnotations>
+    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForRO>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForRO>
     <com.example.Everest_API.sequence_._getRoModeIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getRoModeIN>
     <com.example.Everest_API.sequence_._createROsin>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createROsin>
     <com.example.Everest_API.sequence_._CreateROs_AggregateROAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateROs_AggregateROAnnotations>
@@ -27,12 +35,98 @@
     <com.example.Everest_API.sequence_._DeleteROsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteROsIN>
     <com.example.Everest_API.sequence_._DeleteResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteResourcesIN>
     <com.example.Everest_API.sequence_._createFoldersIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createFoldersIN>
+    <com.example.Everest_API.sequence_._MetadataIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._MetadataIN>
     <com.example.Everest_API.sequence_._updatePermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updatePermissionsIN>
     <com.example.Everest_API.sequence_._AddResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddResourcesIN>
     <com.example.Everest_API.sequence_._GetListIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._GetListIN>
     <com.example.Everest_API.local-entry_._decoupleComplexAnnotation>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._decoupleComplexAnnotation>
+    <com.example.Everest_API.local-entry_._transformAnnotationForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transformAnnotationForResource>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>CreateROs_AggregateROAnnotations</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>setGetAnnotationQueryForResource</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>DeleteResourcesIN</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>updatePermissionsIN</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>setGetProxyQueryForResource</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>4008</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>getPermissionsIN</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>createFoldersIN</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>CreateROs_AggregateResources</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>setGetAnnotationQueryForResourceProxy</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>Metadata_ResourceAnnotations</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>decoupleComplexAnnotation</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>MetadataIN</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>GetListIN</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
     <dependency>
       <groupId>com.example.Everest_API.sequence</groupId>
       <artifactId>AddResourcesIN</artifactId>
@@ -47,13 +141,7 @@
     </dependency>
     <dependency>
       <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>CreateROs_AggregateROAnnotations</artifactId>
-      <version>1.0.0</version>
-      <type>xml</type>
-    </dependency>
-    <dependency>
-      <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>DeleteResourcesIN</artifactId>
+      <artifactId>Metadata_RoAnnotations</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
@@ -64,8 +152,8 @@
       <type>xml</type>
     </dependency>
     <dependency>
-      <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>updatePermissionsIN</artifactId>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>transformAnnotationForResource</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
@@ -94,20 +182,14 @@
       <type>xml</type>
     </dependency>
     <dependency>
-      <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>getPermissionsIN</artifactId>
-      <version>1.0.0</version>
-      <type>xml</type>
-    </dependency>
-    <dependency>
       <groupId>com.example.Everest_API.local-entry</groupId>
       <artifactId>4004</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
     <dependency>
-      <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>createFoldersIN</artifactId>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>setGetAnnotationQueryForRO</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
@@ -124,8 +206,8 @@
       <type>xml</type>
     </dependency>
     <dependency>
-      <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>CreateROs_AggregateResources</artifactId>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>transformAnnotationForRO</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>
@@ -144,18 +226,6 @@
     <dependency>
       <groupId>com.example.Everest_API.api</groupId>
       <artifactId>ROSR</artifactId>
-      <version>1.0.0</version>
-      <type>xml</type>
-    </dependency>
-    <dependency>
-      <groupId>com.example.Everest_API.local-entry</groupId>
-      <artifactId>decoupleComplexAnnotation</artifactId>
-      <version>1.0.0</version>
-      <type>xml</type>
-    </dependency>
-    <dependency>
-      <groupId>com.example.Everest_API.sequence</groupId>
-      <artifactId>GetListIN</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="4008" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[{
+	"RequestID": "$1",
+	"Category": "ESB",
+	"Msg": "In the input json: there must be 1 not blank ro_uri field; there must be a semanticAnnotation array with at least one entry; in each semanticAnnotation entry there must be 1 not blank action field; in each semanticAnnotation entry there must be 1 not blank literal or IRI filed.",
+	"Code": "4008"
+}]]></localEntry>

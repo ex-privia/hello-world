@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="setGetAnnotationQueryForRO" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[function setGetAnnotationQueryForRO( mc){
+			var propertyTermElementValue = mc.getPayloadXML().propertyTermElementValue;
+           	var literalElementValue = mc.getPayloadXML().literalElementValue;
+			var datatypeElementValue = mc.getPayloadXML().datatypeElementValue;
+			var query;
+            if(literalElementValue == 'undefined') {
+				query = "\
+				PREFIX ro: <http://purl.org/wf4ever/ro#>\
+				PREFIX ao: <http://purl.org/ao/>\
+				PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+				PREFIX ns1: " + "<" + mc.getPayloadXML().propertyVocabularyElementValue + ">" + "\
+				SELECT ?annotation\
+					WHERE {\
+					  ?annotation a ro:AggregatedAnnotation;\
+					  ao:body ?body;\
+					  ro:annotatesAggregatedResource <" + mc.getProperty('uri.var.location') + ">\
+					  GRAPH ?body{\ " 
+					  + "<" + mc.getProperty('uri.var.location') + ">" +  " ns1:" + propertyTermElementValue + " <" + mc.getPayloadXML().IRIElementValue + ">\
+					  }\
+					}\
+					";
+			} else {
+				query = "\
+				PREFIX ro: <http://purl.org/wf4ever/ro#>\
+				PREFIX ao: <http://purl.org/ao/>\
+				PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+				PREFIX ns1: " + "<" + mc.getPayloadXML().propertyVocabularyElementValue + ">" + "\
+				SELECT ?annotation\
+					WHERE {\
+					  ?annotation a ro:AggregatedAnnotation;\
+					  ao:body ?body;\
+					  ro:annotatesAggregatedResource <" + mc.getProperty('uri.var.location') + ">\
+					  GRAPH ?body{\ " 
+					  + "<" + mc.getProperty('uri.var.location') + ">" +  " ns1:" + propertyTermElementValue + " \"" + literalElementValue + "\"^^<" + datatypeElementValue + ">\
+					  }\
+					}\
+					";
+	}
+	mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+}]]></localEntry>

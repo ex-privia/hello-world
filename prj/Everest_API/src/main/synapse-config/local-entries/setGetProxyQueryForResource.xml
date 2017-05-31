@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="setGetProxyQueryForResource" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[function setGetProxyQueryForResource( mc){
+			var query = "\
+					PREFIX ro: <http://purl.org/wf4ever/ro#>\
+					PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+					SELECT  ?proxy\
+						WHERE {\
+						  ?proxy ore:proxyFor + "<" + mc.getProperty('resourceUri') + ">\
+						  ore:proxyIn + "<" + mc.getProperty('uri.var.location') + ">\
+						}\
+						";
+			mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+	}]]></localEntry>

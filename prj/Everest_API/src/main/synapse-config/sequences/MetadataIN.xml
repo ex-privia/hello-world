@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="MetadataIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property expression="$body//ro_url" name="RONAME" scope="default" type="STRING"/>
+    <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+    <property expression="get-property('MessageID')" name="REQUEST_ID" scope="default" type="STRING"/>
+    <filter xpath="not($trp:Authorization)">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <script language="js"><![CDATA[//
+				    mc.getEnvelope().getBody().getFirstElement().detach();
+				   //]]></script>
+            <log category="WARN" level="headers">
+                <property name="STEP" value="OPERATION ENDED ORDINARILY WITH WARNINGS"/>
+                <property expression="get-property('MessageID')" name="MessageID"/>
+                <property name="Reason" value="Authorization http request header from the client is missing. Replying with a 401"/>
+            </log>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <enrich>
+        <source clone="true" type="body"/>
+        <target property="BODY_FOR_RESOURCES" type="property"/>
+    </enrich>
+    <clone continueParent="true">
+        <target sequence="Metadata_RoAnnotations"/>
+        <target sequence="Metadata_ResourceAnnotations"/>
+    </clone>
+    <loopback/>
+</sequence>

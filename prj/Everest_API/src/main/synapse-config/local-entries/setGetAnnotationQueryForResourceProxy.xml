@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="setGetAnnotationQueryForResourceProxy" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[function setGetAnnotationQueryForResourceProxy( mc){
+			var propertyTermElementValue = mc.getPayloadXML().propertyTermElementValue;
+            var literalElementValue = mc.getPayloadXML().literalElementValue;
+            var datatypeElementValue = mc.getPayloadXML().datatypeElementValue;
+            var query;
+            if(literalElementValue == 'undefined') {
+	            query = "\
+					PREFIX ro: <http://purl.org/wf4ever/ro#>\
+					PREFIX ao: <http://purl.org/ao/>\
+					PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+					PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+					PREFIX ns1: " + "<" + mc.getPayloadXML().propertyVocabularyElementValue + ">" + "\
+					SELECT ?annotation\
+						WHERE {\
+						  ?annotation a ro:AggregatedAnnotation;\
+						  ao:body ?body;\
+						  ro:annotatesAggregatedResource ?proxy .\
+						  <" + mc.getProperty('uri.var.location') + ">  ore:aggregates ?annotation .\
+						  GRAPH ?body{\ " 
+						  ?proxy +  " ns1:" + propertyTermElementValue + " <" + mc.getPayloadXML().IRIElementValue + ">\
+						  }\
+						  ?proxy ore:proxyFor mc.getProperty('resourceUri') \
+						  ore:proxyIn mc.getProperty('uri.var.location') \
+						}\
+						";
+			} else {
+				query = "\
+					PREFIX ro: <http://purl.org/wf4ever/ro#>\
+					PREFIX ao: <http://purl.org/ao/>\
+					PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+					PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+					PREFIX ns1: " + "<" + mc.getPayloadXML().propertyVocabularyElementValue + ">" + "\
+					SELECT ?annotation\
+						WHERE {\
+						  ?annotation a ro:AggregatedAnnotation;\
+						  ao:body ?body;\
+						  ro:annotatesAggregatedResource ?proxy .\
+						  <" + mc.getProperty('uri.var.location') + ">  ore:aggregates ?annotation .\
+						  GRAPH ?body{\ " 
+						  ?proxy +  " ns1:" + propertyTermElementValue + " \"" + literalElementValue + "\"^^<" + datatypeElementValue + ">\
+						  }\
+						  ?proxy ore:proxyFor mc.getProperty('resourceUri') \
+						  ore:proxyIn mc.getProperty('uri.var.location') \
+						}\
+						";
+			}
+				
+			mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+	}]]></localEntry>

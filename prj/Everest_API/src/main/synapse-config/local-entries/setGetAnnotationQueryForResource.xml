@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="setGetAnnotationQueryForResource" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[function setGetAnnotationQueryForResource( mc){
+			var propertyTermElementValue = mc.getPayloadXML().propertyTermElementValue;
+            var literalElementValue = mc.getPayloadXML().literalElementValue;
+            var datatypeElementValue = mc.getPayloadXML().datatypeElementValue;
+            var proxyElementValue = mc.getPayloadXML().proxyElementValue
+            var IRIElementValue = mc.getPayloadXML().IRIElementValue;
+            var query;
+            if( proxyElementValue.toString().equals('proxy')) {
+            	//PROXY ANNOTATIONS
+            	if(literalElementValue == 'undefined') {
+            		//IRI ANNOTATION
+					query = "\
+					PREFIX ro: <http://purl.org/wf4ever/ro#>\
+					PREFIX ao: <http://purl.org/ao/>\
+					PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+					PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+					PREFIX ns1: <" + mc.getPayloadXML().propertyVocabularyElementValue + ">\
+					SELECT ?annotation\
+						WHERE {\
+							?annotation a ro:AggregatedAnnotation;\
+							ao:body ?body;\
+							ro:annotatesAggregatedResource ?proxy .\
+							<" + mc.getProperty('uri.var.location') + ">  ore:aggregates ?annotation .\
+							GRAPH ?body{\
+								?proxy ns1:" + propertyTermElementValue + "<" + IRIElementValue + ">\
+							}\
+							?proxy ore:proxyFor <" + mc.getProperty('resourceUri') + ">;\
+							ore:proxyIn <" +  mc.getProperty('uri.var.location') + ">\
+						}\
+					";
+            	} else {
+            		//LITERAL ANNOTATION
+					query = "\
+					PREFIX ro: <http://purl.org/wf4ever/ro#>\
+					PREFIX ao: <http://purl.org/ao/>\
+					PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+					PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+					PREFIX ns1: <" + mc.getPayloadXML().propertyVocabularyElementValue + ">\
+					SELECT ?annotation\
+						WHERE {\
+							?annotation a ro:AggregatedAnnotation;\
+							ao:body ?body;\
+							ro:annotatesAggregatedResource ?proxy .\
+							<" + mc.getProperty('uri.var.location') + ">  ore:aggregates ?annotation .\
+							GRAPH ?body{\
+								?proxy ns1:" + propertyTermElementValue + " \"" + literalElementValue + "\"^^<" + datatypeElementValue + ">\
+							}\
+							?proxy ore:proxyFor <" + mc.getProperty('resourceUri') + ">;\
+							ore:proxyIn <" +  mc.getProperty('uri.var.location') + ">\
+						}\
+					";
+            	}
+            } else  {
+            	if(literalElementValue == 'undefined') {
+		            //IRI ANNOTATION
+			            query = "\
+							PREFIX ro: <http://purl.org/wf4ever/ro#>\
+							PREFIX ao: <http://purl.org/ao/>\
+							PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+							PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+							PREFIX ns1: " + "<" + mc.getPayloadXML().propertyVocabularyElementValue + ">" + "\
+							SELECT ?annotation\
+								WHERE {\
+								  ?annotation a ro:AggregatedAnnotation;\
+								  ao:body ?body;\
+								  ro:annotatesAggregatedResource <" + mc.getProperty('resourceUri') + "> .\
+								  <" + mc.getProperty('uri.var.location') + ">  ore:aggregates ?annotation .\
+								  GRAPH ?body{\ " 
+								  + "<" + mc.getProperty('resourceUri') + ">" +  " ns1:" + propertyTermElementValue + " <" + mc.getPayloadXML().IRIElementValue + ">\
+								  }\
+								}\
+								";
+					} else {
+					//LITERAL ANNOTATION
+						query = "\
+							PREFIX ro: <http://purl.org/wf4ever/ro#>\
+							PREFIX ao: <http://purl.org/ao/>\
+							PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\
+							PREFIX ore: <http://www.openarchives.org/ore/terms/>\
+							PREFIX ns1: <" + mc.getPayloadXML().propertyVocabularyElementValue + ">\
+							SELECT ?annotation\
+								WHERE {\
+								  ?annotation a ro:AggregatedAnnotation;\
+								  ao:body ?body;\
+								  ro:annotatesAggregatedResource <" + mc.getProperty('resourceUri') + "> .\
+								  <" + mc.getProperty('uri.var.location') + ">  ore:aggregates ?annotation .\
+								  GRAPH ?body{\
+								  <" + mc.getProperty('resourceUri') + "> ns1:" + propertyTermElementValue + " \"" + literalElementValue + "\"^^<" + datatypeElementValue + ">\
+								  }\
+								}\
+								";
+					}
+			}
+			mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+	}]]></localEntry>

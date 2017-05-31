@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="transformAnnotationForRO" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[//
+	function transformAnnotationForRO( mc){
+		var semanticAnnotationElement = mc.getPayloadXML();
+		var bagAdd = <bagAdd/>;
+		var bagDelete = <bagDelete/>;
+		var bagUpdate = <bagUpdate/>;
+		default xml namespace = "";
+		var propertyTermElementValue = semanticAnnotationElement.property.term.text();
+		var propertyVocabularyElementValue = semanticAnnotationElement.property.vocabulary.text();
+		var rdfProperty;
+		if( 'literal' in semanticAnnotationElement){
+			var literalElementValue = semanticAnnotationElement.literal.text();
+			var datatypeElementValue = 'http://www.w3.org/2001/XMLSchema#string';
+			if( 'datatype' in semanticAnnotationElement){
+				datatypeElementValue = semanticAnnotationElement.datatype.text();
+			}
+			//default xml namespace = propertyVocabularyElementValue;
+			rdfProperty = <{propertyTermElementValue} xmlns={propertyVocabularyElementValue} xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:datatype={datatypeElementValue}>{literalElementValue}</{propertyTermElementValue}>;
+		} else if( 'IRI' in semanticAnnotationElement){
+			var IRIElementValue = semanticAnnotationElement.IRI.text();
+			//default xml namespace = propertyVocabularyElementValue;
+			rdfProperty = <{propertyTermElementValue} xmlns={propertyVocabularyElementValue} xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource={IRIElementValue}/>;
+		} else {
+			java.lang.System.out.println("WRONG semanticAnnotationElement: \r\n" + semanticAnnotationElement.toXMLString());
+		}
+		
+		if(semanticAnnotationElement.action.toString() == "add") {
+	    		bagAdd.appendChild( rdfProperty);
+	    } else if(semanticAnnotationElement.action.toString() == "delete") {
+	    	var toDelete = <toDelete/>;
+	    	toDelete.appendChild(<propertyTermElementValue> {propertyTermElementValue}</propertyTermElementValue>);
+	    	toDelete.appendChild(<propertyVocabularyElementValue> {propertyVocabularyElementValue}</propertyVocabularyElementValue>);
+	    	toDelete.appendChild(<literalElementValue>{literalElementValue}</literalElementValue>);
+	    	toDelete.appendChild(<datatypeElementValue>{datatypeElementValue}</datatypeElementValue>);
+	    	toDelete.appendChild(<IRIElementValue>{IRIElementValue}</IRIElementValue>);
+	    	bagDelete.appendChild(toDelete);
+	    } else if(semanticAnnotationElement.action.toString() == "update") {
+	    	var toUpdate = <toUpdate/>;
+			toUpdate.appendChild(<propertyTermElementValue> {propertyTermElementValue}</propertyTermElementValue>);
+			toUpdate.appendChild(<propertyVocabularyElementValue> {propertyVocabularyElementValue}</propertyVocabularyElementValue>);
+	    	toUpdate.appendChild(<literalElementValue>{literalElementValue}</literalElementValue>);
+	    	toUpdate.appendChild(<datatypeElementValue>{datatypeElementValue}</datatypeElementValue>);
+	    	toUpdate.appendChild(<IRIElementValue>{IRIElementValue}</IRIElementValue>);
+	    	bagUpdate.appendChild(toUpdate);
+	    	var newRdfProperty;
+			if( 'new_literal' in semanticAnnotationElement){
+				var newLiteralElementValue = semanticAnnotationElement.new_literal.text();
+				var newDatatypeElementValue = 'http://www.w3.org/2001/XMLSchema#string';
+				if( 'new_datatype' in semanticAnnotationElement){
+					newDatatypeElementValue = semanticAnnotationElement.new_datatype.text();
+				} else if('datatype' in semanticAnnotationElement) {
+					newDatatypeElementValue = semanticAnnotationElement.datatype.text();
+				}
+				//toUpdate.appendChild(<newLiteralElementValue> {newLiteralElementValue}</newLiteralElementValue>);
+	    		//toUpdate.appendChild(<newDatatypeElementValue>{newDatatypeElementValue}</newDatatypeElementValue>);
+	    		newRdfProperty = <{propertyTermElementValue} xmlns={propertyVocabularyElementValue} xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:datatype={newDatatypeElementValue}>{newLiteralElementValue}</{propertyTermElementValue}>;
+			} else if( 'new_IRI' in semanticAnnotationElement){
+				var newIRIElementValue = semanticAnnotationElement.new_IRI.text();
+				//toUpdate.appendChild(<newIRIElementValue>{newIRIElementValue}</newIRIElementValue>);
+				newRdfProperty = <{propertyTermElementValue} xmlns={propertyVocabularyElementValue} xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource={newIRIElementValue}/>; 
+			} else {
+				java.lang.System.out.println("WRONG semanticAnnotationElement for update: \r\n" + semanticAnnotationElement.toXMLString());
+			}
+			mc.setProperty('newRdfProperty', newRdfProperty);
+			
+		}
+		
+		var root = <root/>;
+		
+		
+		
+		if( bagAdd.*.length() > 0){
+			var forResourceAdd = <forResourceAdd/>;
+			forResourceAdd.appendChild( bagAdd.*);
+            root.appendChild(forResourceAdd);
+		}
+		if( bagUpdate.*.length() > 0){
+			var forResourceUpdate = <forResourceUpdate/>;
+			forResourceUpdate.appendChild( bagUpdate.*);
+            root.appendChild(forResourceUpdate);
+		}
+		if( bagDelete.*.length() > 0){
+			var forResourceDelete = <forResourceDelete/>;
+			forResourceDelete.appendChild( bagDelete.*);
+            root.appendChild(forResourceDelete);
+		}
+		
+   		 if( root.*.length() > 0){
+   		 	mc.setPayloadXML(root);
+   		 }
+	}
+								        	//]]></localEntry>

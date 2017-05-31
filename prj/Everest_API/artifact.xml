@@ -62,4 +62,34 @@
     <artifact name="decoupleComplexAnnotation" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
         <file>src/main/synapse-config/local-entries/decoupleComplexAnnotation.xml</file>
     </artifact>
+    <artifact name="MetadataIN" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/MetadataIN.xml</file>
+    </artifact>
+    <artifact name="4008" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/4008.xml</file>
+    </artifact>
+    <artifact name="setGetAnnotationQueryForResource" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/setGetAnnotationQueryForResource.xml</file>
+    </artifact>
+    <artifact name="setGetAnnotationQueryForResourceProxy" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/setGetAnnotationQueryForResourceProxy.xml</file>
+    </artifact>
+    <artifact name="setGetAnnotationQueryForRO" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/setGetAnnotationQueryForRO.xml</file>
+    </artifact>
+    <artifact name="setGetProxyQueryForResource" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/setGetProxyQueryForResource.xml</file>
+    </artifact>
+    <artifact name="transformAnnotationForResource" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/transformAnnotationForResource.xml</file>
+    </artifact>
+    <artifact name="transformAnnotationForRO" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/transformAnnotationForRO.xml</file>
+    </artifact>
+    <artifact name="Metadata_RoAnnotations" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/Metadata_RoAnnotations.xml</file>
+    </artifact>
+    <artifact name="Metadata_ResourceAnnotations" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/Metadata_ResourceAnnotations.xml</file>
+    </artifact>
 </artifacts>
