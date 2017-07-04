@@ -110,7 +110,7 @@
                 <property expression="get-property('axis2', 'REMOTE_HOST')" name="REMOTE_HOST"/>
                 <property expression="get-property('axis2', 'REMOTE_ADDR')" name="REMOTE_ADDR"/>
             </log>
-            <sequence key="AddResourcesIN"/>
+            <sequence key="AddIN"/>
         </inSequence>
         <outSequence>
             <log level="custom">
