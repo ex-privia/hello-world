@@ -38,9 +38,13 @@
 						WHERE {\
 						<" + ro + "> ore:isDescribedBy ?RoManifest ;\
 									 ore:aggregates ?resource .\
-						OPTIONAL { [a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf }\
 						GRAPH ?RoManifest{\
 							?resource a ro:Resource .\
+							OPTIONAL { [a ro:Folder] ore:isDescribedBy ?folderMap.\
+								GRAPH ?folderMap{\
+									OPTIONAL { [a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf }\
+								}\
+							}\
 							OPTIONAL { ?resource dct:creator ?creator}\
 							OPTIONAL { ?resource dct:created ?created}\
 							OPTIONAL { ?resource ro:name ?name}\
