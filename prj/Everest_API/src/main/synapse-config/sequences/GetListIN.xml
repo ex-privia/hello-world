@@ -42,7 +42,7 @@
 							?resource a ro:Resource .\
 							OPTIONAL { [a ro:Folder] ore:isDescribedBy ?folderMap.\
 								GRAPH ?folderMap{\
-									OPTIONAL { [a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf }\
+									[a ro:FolderEntry; ore:proxyFor ?resource] ore:proxyIn ?entryOf \
 								}\
 							}\
 							OPTIONAL { ?resource dct:creator ?creator}\
