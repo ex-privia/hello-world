@@ -7,20 +7,60 @@
         <property expression="get-property('payload')" name="payload"/>
         <property expression="$body/jsonObject" name="body"/>
     </log>
+    <property expression="$trp:Authorization" name="AUTH" scope="default" type="STRING"/>
+    <enrich>
+        <source clone="true" type="body"/>
+        <target property="ORIGINAL_PAYLOAD" type="property"/>
+    </enrich>
     <filter regex="y" source="get-property('transport', 'createFoldersFirst')">
         <then>
-            <iterate continueParent="true" expression="$body/jsonObject" sequential="true">
+            <clone continueParent="true">
                 <target sequence="createFolders"/>
-            </iterate>
+                <target>
+                    <sequence>
+                        <script language="js"><![CDATA[//
+			            	var originalPayload = mc.getProperty("ORIGINAL_PAYLOAD")
+			            	mc.setPayloadXML( originalPayload)
+						//]]></script>
+                    </sequence>
+                </target>
+            </clone>
+            <property name="AGGREGATING" scope="default">
+                <myns:AGGREGATING xmlns:myns="http://acsys.it/"/>
+            </property>
+            <aggregate>
+                <completeCondition>
+                    <messageCount max="1" min="-1"/>
+                </completeCondition>
+                <onComplete enclosingElementProperty="AGGREGATING" expression="/">
+                    <script language="js"><![CDATA[//
+					var body = mc.getPayloadXML()
+					java.lang.System.out.println("BEFORE ENRICH THE BODY IS: " + body)
+					//]]></script>
+                    <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
+                    <enrich>
+                        <source clone="true" property="ORIGINAL_PAYLOAD" type="property"/>
+                        <target type="body"/>
+                    </enrich>
+                    <script language="js"><![CDATA[//
+					var body = mc.getPayloadXML()
+					java.lang.System.out.println("AFTER ENRICH THE BODY IS: " + body)
+					//]]></script>
+                    <clone continueParent="true">
+                        <target sequence="AddResources"/>
+                    </clone>
+                    <loopback/>
+                </onComplete>
+            </aggregate>
         </then>
         <else>
             <clone continueParent="true">
                 <target sequence="createFolders"/>
             </clone>
+            <clone continueParent="true">
+                <target sequence="AddResources"/>
+            </clone>
+            <loopback/>
         </else>
     </filter>
-    <clone continueParent="true">
-        <target sequence="AddResources"/>
-    </clone>
-    <loopback/>
 </sequence>

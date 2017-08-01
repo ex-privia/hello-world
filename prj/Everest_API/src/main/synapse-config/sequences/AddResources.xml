@@ -67,7 +67,7 @@
                                 <endpoint name="aggregateInternal">
                                     <http method="post" uri-template="{uri.var.location}">
                                         <timeout>
-                                            <duration>120000</duration>
+                                            <duration>240000</duration>
                                             <responseAction>fault</responseAction>
                                         </timeout>
                                         <suspendOnFailure>
@@ -149,7 +149,7 @@
                                                     <endpoint name="Move_internal">
                                                         <http method="post" uri-template="{uri.var.folder}">
                                                             <timeout>
-                                                                <duration>120000</duration>
+                                                                <duration>240000</duration>
                                                                 <responseAction>fault</responseAction>
                                                             </timeout>
                                                             <suspendOnFailure>
@@ -213,7 +213,7 @@
                                                     <endpoint name="aggregateAnnotationsForInternalResources">
                                                         <http method="post" uri-template="{uri.var.location}">
                                                             <timeout>
-                                                                <duration>120000</duration>
+                                                                <duration>240000</duration>
                                                                 <responseAction>fault</responseAction>
                                                             </timeout>
                                                             <suspendOnFailure>
@@ -260,7 +260,7 @@
                                                     <endpoint name="aggregateAnnotationsForInternalResourceProxies">
                                                         <http method="post" uri-template="{uri.var.location}">
                                                             <timeout>
-                                                                <duration>120000</duration>
+                                                                <duration>240000</duration>
                                                                 <responseAction>fault</responseAction>
                                                             </timeout>
                                                             <suspendOnFailure>
@@ -333,7 +333,7 @@
                                 <endpoint name="aggregateExternal">
                                     <http method="post" uri-template="{uri.var.location}">
                                         <timeout>
-                                            <duration>120000</duration>
+                                            <duration>240000</duration>
                                             <responseAction>fault</responseAction>
                                         </timeout>
                                         <suspendOnFailure>
@@ -415,7 +415,7 @@
                                                     <endpoint name="Move_external">
                                                         <http method="post" uri-template="{uri.var.folder}">
                                                             <timeout>
-                                                                <duration>120000</duration>
+                                                                <duration>240000</duration>
                                                                 <responseAction>fault</responseAction>
                                                             </timeout>
                                                             <suspendOnFailure>
@@ -490,7 +490,7 @@
                                                     <endpoint name="aggregateAnnotationsForExternalResources">
                                                         <http method="post" uri-template="{uri.var.location}">
                                                             <timeout>
-                                                                <duration>120000</duration>
+                                                                <duration>240000</duration>
                                                                 <responseAction>fault</responseAction>
                                                             </timeout>
                                                             <suspendOnFailure>
@@ -537,7 +537,7 @@
                                                     <endpoint name="aggregateAnnotationsForExternalResourceProxies">
                                                         <http method="post" uri-template="{uri.var.location}">
                                                             <timeout>
-                                                                <duration>120000</duration>
+                                                                <duration>240000</duration>
                                                                 <responseAction>fault</responseAction>
                                                             </timeout>
                                                             <suspendOnFailure>

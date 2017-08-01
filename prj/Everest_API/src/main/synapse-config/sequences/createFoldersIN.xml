@@ -111,7 +111,7 @@
                                 <endpoint>
                                     <http method="post" uri-template="{uri.var.location}">
                                         <timeout>
-                                            <duration>120000</duration>
+                                            <duration>240000</duration>
                                             <responseAction>fault</responseAction>
                                         </timeout>
                                         <suspendOnFailure>
@@ -254,7 +254,7 @@
                                         <endpoint>
                                             <http method="post" uri-template="{uri.var.location}">
                                                 <timeout>
-                                                    <duration>120000</duration>
+                                                    <duration>240000</duration>
                                                     <responseAction>fault</responseAction>
                                                 </timeout>
                                                 <suspendOnFailure>
@@ -297,5 +297,4 @@
             </sequence>
         </target>
     </clone>
-    <loopback/>
 </sequence>
