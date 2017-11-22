@@ -3,16 +3,12 @@
     <log level="custom">
         <property name="mylog" value="***************************** RECEIVED REQUEST FROM THE CLIENT **************************"/>
     </log>
-    <!-- choose the xml formatter -->
-    <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
-    <!-- set headers -->
-    <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
-    <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
-    <log level="custom">
-        <property name="mylog" value="*********************** CALLING BACK END: SPARQL ********************"/>
-    </log>
-    <!-- call the annotation operation on the ro api -->
-    <property expression="get-property('RONAME')" name="uri.var.location" scope="default" type="STRING"/>
+    <filter xpath="$body/jsonObject/geometry">
+        <then>
+            <property expression="fn:concat('g=', $body/jsonObject/geometry)" name="geometryParam" scope="default" type="STRING"/>
+        </then>
+        <else/>
+    </filter>
     <script language="js"><![CDATA[//
             	var payloadJSON = mc.getPayloadJSON();
 				var entityType = "";
@@ -66,39 +62,49 @@
 						} " + orderBy + "\
 					";
 				}else if( entityType === "RO"){
+				    mc.setProperty("entityType", "RO");
+				    mc.setProperty("", "sparqlQuery");
 					var vrc = "";
 					if( 'vrc' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 						vrc = "FILTER regex( str( ?vrc), \"" + payloadJSON.vrc + "\", \"i\") ";
 					}
 	            	var createdInterval = "";
 					if( 'since_YYYY-MM-DD' in payloadJSON){
+					    mc.setProperty("sparqlQuery", "sparqlQuery");
 		            	createdInterval += "\
 						    FILTER ( ?created >= \"" + payloadJSON["since_YYYY-MM-DD"] + "T00:00:00.000Z\"^^xsd:dateTime) \
 						";
 					}
 					if( 'till_YYYY-MM-DD' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 		            	createdInterval += "\
 						    FILTER ( ?created <= \"" + payloadJSON["till_YYYY-MM-DD"] + "T23:59:59.999Z\"^^xsd:dateTime) \
 						";
 					}
 					var title = "";
 					if( 'title' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 						title = "FILTER regex( str( ?title), \"" + payloadJSON.title + "\", \"i\")";
 					}
 					var description = "";
 					if( 'description' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 						description = "FILTER regex( str( ?description), \"" + payloadJSON.description + "\", \"i\")";
 					}
 					var creator = "";
 					if( 'creator' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 						creator = "FILTER regex( str( ?creator), \"" + payloadJSON.creator + "\", \"i\")";
 					}
 					var status = "";
 					if( 'status' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 						status = "FILTER EXISTS{ ?ro a roevo:" + payloadJSON.status + "}";
 					}
 					var ro = "";
 					if( 'ro' in payloadJSON){
+						mc.setProperty("sparqlQuery", "sparqlQuery");
 						ro = "FILTER regex( str( ?ro), \"" + payloadJSON.ro + "\", \"i\")";
 					}
 					var orderBy = "ORDER BY ?title ?created ?creator ?ro ?description ?vrc ?status";
@@ -129,7 +135,8 @@
 						+ creator
 						+ status
 						+ ro
-					+ " } " + orderBy
+						+ "OS_TOKEN"
+					+ " } " + orderBy + " LIMIT 100"
 					;
 					// FILTER regex( str( ?x), \"Pack\")\
 				}else{
@@ -262,15 +269,209 @@
 					}
 				}
 				mc.setProperty("QUERY", query);
+				//java.lang.System.out.println("QUERYYYY " + query);
 				mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
 			//]]></script>
+    <!-- choose the xml formatter -->
+    <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+    <!-- set headers -->
+    <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
+    <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
     <log level="custom">
-        <property expression="get-property('QUERY')" name="SPARQL QUERY:"/>
+        <property name="mylog" value="*********************** CALLING BACK END: SPARQL ********************"/>
     </log>
-    <call>
-        <endpoint>
-            <http uri-template="http://sandbox.rohub.org/rodl/"/>
-        </endpoint>
-    </call>
-    <respond/>
+    <filter regex="RO" source="get-property('default', 'entityType')">
+        <then>
+            <filter regex="sparqlQuery" source="get-property('default', 'sparqlQuery')">
+                <then>
+                    <script language="js"><![CDATA[//
+		            	var query = new String(mc.getProperty('QUERY'));
+		            	query = query.replace("OS_TOKEN", '');
+						mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+					//]]></script>
+                    <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+                    <call>
+                        <endpoint>
+                            <http uri-template="http://sandbox.rohub.org/rodl/sparql"/>
+                        </endpoint>
+                    </call>
+                    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                    <filter xpath="//results[count(*)=0]">
+                        <then>
+                            <respond/>
+                        </then>
+                        <else/>
+                    </filter>
+                    <iterate expression="//bindings" id="bindingsIterator">
+                        <target>
+                            <sequence>
+                                <property expression="fn:concat('http://www.rohub.org/opensearch/?q=','&quot;', $body/bindings/ro/value, '&quot;', '&amp;', get-property('geometryParam'))" name="uri.var.openSearchUrl" scope="default" type="STRING"/>
+                                <property expression="json-eval($)" name="curr_result" scope="default" type="STRING"/>
+                                <call>
+                                    <endpoint>
+                                        <http method="get" uri-template="{uri.var.openSearchUrl}">
+                                            <markForSuspension>
+                                                <errorCodes>101507,101508,101505,101506,101509,101500,101510,101001,101000,101503,101504,101501</errorCodes>
+                                                <retriesBeforeSuspension>3</retriesBeforeSuspension>
+                                                <retryDelay>1000</retryDelay>
+                                            </markForSuspension>
+                                        </http>
+                                    </endpoint>
+                                </call>
+                                <script language="js"><![CDATA[//
+					    			var payload = mc.getPayloadXML();
+					    			var defNamespace = new Namespace('http://www.w3.org/2005/Atom');
+					    			var osNamespace=new Namespace('http://a9.com/-/spec/opensearch/1.1/');
+					    			var totalResults = payload..osNamespace::totalResults;
+					    			//java.lang.System.out.println( "totalResults " + totalResults);
+					    			var currResult = JSON.parse('{"bindings":[{}]}');
+					    			if(totalResults == 0) {
+						    			java.lang.System.out.println( "NO RESULTS IN OPENSEARCH SYSTEM FOR " + payload);
+					    			} else {
+					    				//ADD GEOMETRY INFORMATION TO CURRBINDING
+					    				var entry = payload..defNamespace::entry;
+					    				//java.lang.System.out.println( "entry " + entry);
+					    				var georssNamespace = 'http://www.georss.org/georss';
+										var geometryStr = '[]';
+										var geometryJSON = JSON.parse(geometryStr);
+										var points = entry..georssNamespace::point;
+										for each(var currPoint in points) {
+											geometryJSON.push({"type": "point", "value":""+currPoint});
+										}
+										var line = entry..georssNamespace::line;
+										for each(var currLine in line) {
+											geometryJSON.push({"type": "line", "value":""+currLine});
+										}
+										var polygons = entry..georssNamespace::polygon;
+										for each(var currPoly in polygons) {
+											geometryJSON.push({"type": "polygon", "value":""+currPoly});
+										}
+										//java.lang.System.out.println( "geometryJSON " + JSON.stringify(geometryJSON));
+										
+					    				var currBinding = JSON.parse(mc.getProperty('curr_result'));
+					    				currBinding.bindings['geometry'] = geometryJSON;
+					    				
+										currResult = currBinding;
+					    			}
+					    			//java.lang.System.out.println( "currResult " + JSON.stringify(currResult).replace(/\\"/g, "&quot;"));
+					    			mc.setPayloadJSON(JSON.stringify(currResult).replace(/\\"/g, "&quot;"));
+								
+				     //]]></script>
+                            </sequence>
+                        </target>
+                    </iterate>
+                    <property name="AGGREGATING" scope="default">
+                        <myns:AGGREGATING xmlns:myns="http://acsys.it/"/>
+                    </property>
+                    <aggregate id="bindingsIterator">
+                        <completeCondition timeout="120">
+                            <messageCount max="-1" min="-1"/>
+                        </completeCondition>
+                        <onComplete enclosingElementProperty="AGGREGATING" expression="//bindings">
+                            <script function="mergeGetListINResponse" key="mergeGetListINResponse" language="js"/>
+                            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                            <respond/>
+                        </onComplete>
+                    </aggregate>
+                </then>
+                <else>
+                    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                    <property expression="fn:concat('http://www.rohub.org/opensearch/?',get-property('geometryParam'),'&amp;','count=100')" name="uri.var.openSearchUrl" scope="default" type="STRING"/>
+                    <call>
+                        <endpoint>
+                            <http method="get" uri-template="{uri.var.openSearchUrl}"/>
+                        </endpoint>
+                    </call>
+                    <property expression="count(//*[local-name()='entry' and namespace-uri()='http://www.w3.org/2005/Atom'])=0" name="NO_RESULT" scope="default" type="STRING"/>
+                    <filter regex="true" source="get-property('NO_RESULT')">
+                        <then>
+                            <script language="js"><![CDATA[//
+			                    java.lang.System.out.println("NO RESULTS");
+					             var noResult = JSON.parse('{"head":{"vars":["ro","created","title","description","vrc","creatorName","creator","status", "geometry"]},' +
+										'"results":{"bindings":[]}}');
+								 mc.setPayloadJSON(noResult);
+			         		//]]></script>
+                            <respond/>
+                        </then>
+                        <else/>
+                    </filter>
+                    <iterate expression="//*[local-name()='entry' and namespace-uri()='http://www.w3.org/2005/Atom']" id="entryIterator">
+                        <target>
+                            <sequence>
+                                <property expression="$body" name="curr_entry" scope="default" type="STRING"/>
+                                <script language="js"><![CDATA[//
+				                	var query = new String(mc.getProperty('QUERY'));
+				                	var currEntry = new XML(mc.getProperty('curr_entry'));
+				                	var defNamespace = new Namespace('http://www.w3.org/2005/Atom');
+				                	var id = currEntry..defNamespace::id
+				                	query = query.replace("OS_TOKEN", 'FILTER regex( str( ?ro), "'+ id +'", "i") ');
+				                	//java.lang.System.out.println("NEW QUERY " + query);
+				                	mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+				                //]]></script>
+                                <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+                                <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
+                                <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
+                                <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+                                <call>
+                                    <endpoint>
+                                        <http uri-template="http://sandbox.rohub.org/rodl/sparql"/>
+                                    </endpoint>
+                                </call>
+                                <script language="js"><![CDATA[//
+					    			var payloadJSON = mc.getPayloadJSON();
+					    			var currEntry = new XML(mc.getProperty('curr_entry'));
+					    			var geometryStr = '[]';
+									var geometryJSON = JSON.parse(geometryStr);
+									var georssNamespace = 'http://www.georss.org/georss';
+									var points = currEntry..georssNamespace::point;
+									for each(var currPoint in points) {
+										geometryJSON.push({"type": "point", "value":""+currPoint});
+									}
+									var line = currEntry..georssNamespace::line;
+									for each(var currLine in line) {
+										geometryJSON.push({"type": "line", "value":""+currLine});
+									}
+									var polygons = currEntry..georssNamespace::polygon;
+									for each(var currPoly in polygons) {
+										geometryJSON.push({"type": "polygon", "value":""+currPoly});
+									}
+									//java.lang.System.out.println( "geometryJSON " + JSON.stringify(geometryJSON));
+									var bindings = payloadJSON.results.bindings;
+									for each (var currBinding in bindings) {
+										currBinding['geometry'] = geometryJSON;
+									}
+					    			
+					    			payloadJSON.head.vars.push('geometry');
+					    			//java.lang.System.out.println( "payloadJSON " + JSON.stringify(payloadJSON));
+					    			mc.setPayloadJSON(payloadJSON);
+								
+				     //]]></script>
+                            </sequence>
+                        </target>
+                    </iterate>
+                    <property name="AGGREGATING" scope="default">
+                        <myns:AGGREGATING xmlns:myns="http://acsys.it/"/>
+                    </property>
+                    <aggregate id="entryIterator">
+                        <completeCondition timeout="120">
+                            <messageCount max="-1" min="-1"/>
+                        </completeCondition>
+                        <onComplete enclosingElementProperty="AGGREGATING" expression="//bindings">
+                            <script function="mergeGetListINResponse" key="mergeGetListINResponse" language="js"/>
+                            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+                            <respond/>
+                        </onComplete>
+                    </aggregate>
+                </else>
+            </filter>
+        </then>
+        <else>
+            <call>
+                <endpoint>
+                    <http uri-template="http://sandbox.rohub.org/rodl/"/>
+                </endpoint>
+            </call>
+            <respond/>
+        </else>
+    </filter>
 </sequence>
