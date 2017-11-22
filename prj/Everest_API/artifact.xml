@@ -101,4 +101,7 @@
     <artifact name="createFolders" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
         <file>src/main/synapse-config/sequences/createFolders.xml</file>
     </artifact>
+    <artifact name="mergeGetListINResponse" groupId="com.example.Everest_API.local-entry" version="1.0.0" type="synapse/local-entry" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/local-entries/mergeGetListINResponse.xml</file>
+    </artifact>
 </artifacts>
