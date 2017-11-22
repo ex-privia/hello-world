@@ -9,40 +9,42 @@
   <name>Everest_APICompositeApplication</name>
   <description>Everest_APICompositeApplication</description>
   <properties>
-    <com.example.Everest_API.api_._ROSR>capp/EnterpriseServiceBus</com.example.Everest_API.api_._ROSR>
-    <com.example.Everest_API.local-entry_._transform>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transform>
-    <com.example.Everest_API.sequence_._generalFault>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._generalFault>
-    <com.example.Everest_API.sequence_._getPermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getPermissionsIN>
-    <com.example.Everest_API.sequence_._Metadata_RoAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_RoAnnotations>
-    <com.example.Everest_API.sequence_._createFolders>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createFolders>
-    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForResource>
+    <artifact.types>jaggery/app=zip,synapse/priority-executor=xml,synapse/inbound-endpoint=xml,service/rule=aar,synapse/message-store=xml,event/stream=json,service/meta=xml,synapse/proxy-service=xml,bpel/workflow=zip,synapse/sequence=xml,synapse/endpointTemplate=xml,carbon/application=car,wso2/gadget=dar,synapse/api=xml,synapse/event-source=xml,synapse/message-processors=xml,event/receiver=xml,lib/dataservice/validator=jar,synapse/template=xml,synapse/endpoint=xml,lib/carbon/ui=jar,lib/synapse/mediator=jar,event/publisher=xml,synapse/local-entry=xml,synapse/task=xml,webapp/jaxws=war,registry/resource=zip,synapse/configuration=xml,service/axis2=aar,synapse/lib=zip,synapse/sequenceTemplate=xml,event/execution-plan=siddhiql,service/dataservice=dbs,web/application=war,lib/library/bundle=jar</artifact.types>
     <com.example.Everest_API.sequence_._CreateRos_SetMode>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateRos_SetMode>
-    <com.example.Everest_API.sequence_._updateRoModesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updateRoModesIN>
-    <com.example.Everest_API.sequence_._AddResources>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddResources>
-    <com.example.Everest_API.sequence_._CreateROs_AggregateResources>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateROs_AggregateResources>
+    <com.example.Everest_API.sequence_._createFolders>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createFolders>
+    <com.example.Everest_API.sequence_._AddIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddIN>
     <com.example.Everest_API.local-entry_._transformAnnotationForRO>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transformAnnotationForRO>
-    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForResourceProxy>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForResourceProxy>
+    <com.example.Everest_API.sequence_._DeleteROsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteROsIN>
+    <com.example.Everest_API.local-entry_._mergeGetListINResponse>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._mergeGetListINResponse>
+    <com.example.Everest_API.sequence_._CreateROs_AggregateResources>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateROs_AggregateResources>
+    <com.example.Everest_API.sequence_._MetadataIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._MetadataIN>
+    <com.example.Everest_API.local-entry_._decoupleComplexAnnotation>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._decoupleComplexAnnotation>
+    <com.example.Everest_API.sequence_._Metadata_ResourceAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_ResourceAnnotations>
+    <com.example.Everest_API.sequence_._getRoModeIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getRoModeIN>
+    <com.example.Everest_API.sequence_._updatePermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updatePermissionsIN>
+    <com.example.Everest_API.sequence_._createROsin>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createROsin>
+    <com.example.Everest_API.local-entry_._transformAnnotationForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transformAnnotationForResource>
+    <com.example.Everest_API.sequence_._getPermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getPermissionsIN>
+    <com.example.Everest_API.sequence_._createFoldersIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createFoldersIN>
+    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForRO>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForRO>
+    <com.example.Everest_API.sequence_._Metadata_RoAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_RoAnnotations>
+    <com.example.Everest_API.sequence_._generalFault>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._generalFault>
+    <com.example.Everest_API.sequence_._AddResources>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddResources>
+    <com.example.Everest_API.sequence_._DeleteResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteResourcesIN>
     <com.example.Everest_API.local-entry_._4008>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4008>
     <com.example.Everest_API.local-entry_._4007>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4007>
-    <com.example.Everest_API.local-entry_._setGetProxyQueryForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetProxyQueryForResource>
+    <com.example.Everest_API.sequence_._GetListIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._GetListIN>
     <com.example.Everest_API.local-entry_._4006>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4006>
     <com.example.Everest_API.local-entry_._4004>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4004>
     <com.example.Everest_API.local-entry_._4003>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._4003>
-    <com.example.Everest_API.sequence_._Metadata_ResourceAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_ResourceAnnotations>
-    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForRO>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForRO>
-    <com.example.Everest_API.sequence_._getRoModeIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getRoModeIN>
-    <com.example.Everest_API.sequence_._createROsin>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createROsin>
+    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForResource>
+    <com.example.Everest_API.local-entry_._transform>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transform>
+    <com.example.Everest_API.local-entry_._setGetAnnotationQueryForResourceProxy>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetAnnotationQueryForResourceProxy>
+    <com.example.Everest_API.api_._ROSR>capp/EnterpriseServiceBus</com.example.Everest_API.api_._ROSR>
+    <com.example.Everest_API.local-entry_._setGetProxyQueryForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._setGetProxyQueryForResource>
     <com.example.Everest_API.sequence_._CreateROs_AggregateROAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._CreateROs_AggregateROAnnotations>
-    <artifact.types>jaggery/app=zip,synapse/priority-executor=xml,synapse/inbound-endpoint=xml,service/rule=aar,synapse/message-store=xml,event/stream=json,service/meta=xml,synapse/proxy-service=xml,bpel/workflow=zip,synapse/sequence=xml,synapse/endpointTemplate=xml,carbon/application=car,wso2/gadget=dar,synapse/api=xml,synapse/event-source=xml,synapse/message-processors=xml,event/receiver=xml,lib/dataservice/validator=jar,synapse/template=xml,synapse/endpoint=xml,lib/carbon/ui=jar,lib/synapse/mediator=jar,event/publisher=xml,synapse/local-entry=xml,synapse/task=xml,webapp/jaxws=war,registry/resource=zip,synapse/configuration=xml,service/axis2=aar,synapse/lib=zip,synapse/sequenceTemplate=xml,event/execution-plan=siddhiql,service/dataservice=dbs,web/application=war,lib/library/bundle=jar</artifact.types>
-    <com.example.Everest_API.sequence_._DeleteROsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteROsIN>
-    <com.example.Everest_API.sequence_._DeleteResourcesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._DeleteResourcesIN>
-    <com.example.Everest_API.sequence_._createFoldersIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createFoldersIN>
-    <com.example.Everest_API.sequence_._MetadataIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._MetadataIN>
-    <com.example.Everest_API.sequence_._AddIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AddIN>
-    <com.example.Everest_API.sequence_._updatePermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updatePermissionsIN>
-    <com.example.Everest_API.sequence_._GetListIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._GetListIN>
-    <com.example.Everest_API.local-entry_._decoupleComplexAnnotation>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._decoupleComplexAnnotation>
-    <com.example.Everest_API.local-entry_._transformAnnotationForResource>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transformAnnotationForResource>
+    
+    <com.example.Everest_API.sequence_._updateRoModesIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._updateRoModesIN>
   </properties>
   <dependencies>
     <dependency>
@@ -172,6 +174,12 @@
       <type>xml</type>
     </dependency>
     <dependency>
+      <groupId>com.example.Everest_API.local-entry</groupId>
+      <artifactId>mergeGetListINResponse</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+        <dependency>
       <groupId>com.example.Everest_API.sequence</groupId>
       <artifactId>getRoModeIN</artifactId>
       <version>1.0.0</version>
