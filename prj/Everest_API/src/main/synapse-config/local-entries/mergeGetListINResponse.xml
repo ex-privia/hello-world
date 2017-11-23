@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localEntry key="mergeGetListINResponse" xmlns="http://ws.apache.org/ns/synapse"><![CDATA[//
+	function mergeGetListINResponse( mc){
+		var payload = mc.getPayloadXML();
+		//java.lang.System.out.println("payload XML " + payload);
+		var head = <head/>;
+		head.appendChild(<vars>ro</vars>);
+		head.appendChild(<vars>created</vars>);
+		head.appendChild(<vars>title</vars>);
+		head.appendChild(<vars>description</vars>);
+		head.appendChild(<vars>vrc</vars>);
+		head.appendChild(<vars>description</vars>);
+		head.appendChild(<vars>creator</vars>);
+		head.appendChild(<vars>status</vars>);
+		head.appendChild(<vars>geometry</vars>);
+		var root = new XML(<jsonObject/>);
+		root.appendChild(head);
+		var results = <results><?xml-multiple bindings?>
+</results>;
+		
+		var payloadBindings = payload.bindings;
+        for each (var currBinding in payloadBindings) {
+         	if(currBinding.children().length() != 0) {
+         		results.appendChild(currBinding);
+         	}
+         }
+		
+        var payloadBindings = payload.jsonObject.bindings;
+        for each (var currBinding in payloadBindings) {
+         	if(currBinding.children().length() != 0) {
+         		results.appendChild(currBinding);
+         	}
+         }
+         
+        var payloadBindings = payload.jsonObject.results.bindings;
+        for each (var currBinding in payloadBindings) {
+         	if(currBinding.children().length() != 0) {
+         		results.appendChild(currBinding);
+         	}
+         }
+         
+         root.appendChild(results);
+         //java.lang.System.out.println("result " + root);
+         mc.setPayloadXML(root);
+	}
+
+
+//]]></localEntry>
