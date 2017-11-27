@@ -17,7 +17,7 @@
 				}
 				var query = "";
 				if( entityType === "resource"){
-				 	mc.setProperty("entityType", "resource");
+				 	mc.setProperty("entityType", "NO_RO");
 					var ro = "";
 					if( 'ro' in payloadJSON){
 						ro = payloadJSON.ro;
@@ -140,6 +140,7 @@
 					;
 					// FILTER regex( str( ?x), \"Pack\")\
 				}else{
+				    mc.setProperty("entityType", "NO_RO");
 					var ro = "";
 					if( 'ro' in payloadJSON){
 						ro = payloadJSON.ro;
@@ -519,7 +520,7 @@
             </filter>
         </then>
         <else>
-            <filter regex="resource" source="get-property('default', 'entityType')">
+            <filter regex="NO_RO" source="get-property('default', 'entityType')">
                 <then>
                     <log level="custom">
                         <property expression="get-property('default', 'entityType')" name="ENTITY TYPE"/>
