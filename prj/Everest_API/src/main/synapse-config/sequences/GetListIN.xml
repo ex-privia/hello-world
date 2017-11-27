@@ -17,6 +17,7 @@
 				}
 				var query = "";
 				if( entityType === "resource"){
+				 	mc.setProperty("entityType", "resource");
 					var ro = "";
 					if( 'ro' in payloadJSON){
 						ro = payloadJSON.ro;
@@ -63,7 +64,6 @@
 					";
 				}else if( entityType === "RO"){
 				    mc.setProperty("entityType", "RO");
-				    mc.setProperty("", "sparqlQuery");
 					var vrc = "";
 					if( 'vrc' in payloadJSON){
 						mc.setProperty("sparqlQuery", "sparqlQuery");
@@ -371,6 +371,7 @@
 						    				
 											currResult = currBinding;
 						    			}
+						    			//java.lang.System.out.println("currResult " + JSON.stringify(currResult));
 						    			mc.setPayloadJSON(JSON.stringify(currResult).replace(/\\"/g, "&quot;"));
 									
 					     //]]></script>
@@ -411,7 +412,7 @@
                             <script language="js"><![CDATA[//
 			                    java.lang.System.out.println("NO RESULTS");
 					             var noResult = JSON.parse('{"head":{"vars":["ro","created","title","description","vrc","creatorName","creator","status", "geometry"]},' +
-										'"results":{"bindings":[{}]}}');
+										'"results":{"bindings":[]}}');
 								 mc.setPayloadJSON(noResult);
 			         		//]]></script>
                             <respond/>
@@ -453,7 +454,7 @@
                                         <script language="js"><![CDATA[//
 			                    java.lang.System.out.println("NO RESULTS");
 					             var noResult = JSON.parse('{"head":{"vars":["ro","created","title","description","vrc","creatorName","creator","status", "geometry"]},' +
-										'"results":{"bindings":[{}]}}');
+										'"results":{"bindings":[]}}');
 								 mc.setPayloadJSON(noResult);
 			         		//]]></script>
                                     </then>
@@ -518,8 +519,20 @@
             </filter>
         </then>
         <else>
-            <call/>
-            <respond/>
+            <filter regex="resource" source="get-property('default', 'entityType')">
+                <then>
+                    <log level="custom">
+                        <property expression="get-property('default', 'entityType')" name="ENTITY TYPE"/>
+                    </log>
+                    <call>
+                        <endpoint>
+                            <http uri-template="http://sandbox.rohub.org/rodl/"/>
+                        </endpoint>
+                    </call>
+                    <respond/>
+                </then>
+                <else/>
+            </filter>
         </else>
     </filter>
 </sequence>

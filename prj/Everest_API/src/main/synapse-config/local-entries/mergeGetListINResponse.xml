@@ -15,8 +15,7 @@
 		head.appendChild(<vars>geometry</vars>);
 		var root = new XML(<jsonObject/>);
 		root.appendChild(head);
-		var results = <results><?xml-multiple bindings?>
-</results>;
+		var results = <results/>;
 		
 		var payloadBindings = payload.bindings;
         for each (var currBinding in payloadBindings) {
@@ -39,9 +38,16 @@
          	}
          }
          
-         root.appendChild(results);
-         //java.lang.System.out.println("result " + root);
-         mc.setPayloadXML(root);
+         if(results.children().length()==0) {
+         	java.lang.System.out.println("NO RESULTS");
+            var noResult = JSON.parse('{"head":{"vars":["ro","created","title","description","vrc","creatorName","creator","status", "geometry"]},' +
+					'"results":{"bindings":[]}}');
+			 mc.setPayloadJSON(noResult);
+         } else {
+	         root.appendChild(results);
+	         //java.lang.System.out.println("result " + root);
+	         mc.setPayloadXML(root);
+	     }
 	}
 
 
