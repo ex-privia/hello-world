@@ -66,45 +66,45 @@
 				    mc.setProperty("entityType", "RO");
 					var vrc = "";
 					if( 'vrc' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 						vrc = "FILTER regex( str( ?vrc), \"" + payloadJSON.vrc + "\", \"i\") ";
 					}
 	            	var createdInterval = "";
 					if( 'since_YYYY-MM-DD' in payloadJSON){
-					    mc.setProperty("sparqlQuery", "sparqlQuery");
+					    //mc.setProperty("sparqlQuery", "sparqlQuery");
 		            	createdInterval += "\
 						    FILTER ( ?created >= \"" + payloadJSON["since_YYYY-MM-DD"] + "T00:00:00.000Z\"^^xsd:dateTime) \
 						";
 					}
 					if( 'till_YYYY-MM-DD' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 		            	createdInterval += "\
 						    FILTER ( ?created <= \"" + payloadJSON["till_YYYY-MM-DD"] + "T23:59:59.999Z\"^^xsd:dateTime) \
 						";
 					}
 					var title = "";
 					if( 'title' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 						title = "FILTER regex( str( ?title), \"" + payloadJSON.title + "\", \"i\")";
 					}
 					var description = "";
 					if( 'description' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 						description = "FILTER regex( str( ?description), \"" + payloadJSON.description + "\", \"i\")";
 					}
 					var creator = "";
 					if( 'creator' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 						creator = "FILTER regex( str( ?creator), \"" + payloadJSON.creator + "\", \"i\")";
 					}
 					var status = "";
 					if( 'status' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 						status = "FILTER EXISTS{ ?ro a roevo:" + payloadJSON.status + "}";
 					}
 					var ro = "";
 					if( 'ro' in payloadJSON){
-						mc.setProperty("sparqlQuery", "sparqlQuery");
+						//mc.setProperty("sparqlQuery", "sparqlQuery");
 						ro = "FILTER regex( str( ?ro), \"" + payloadJSON.ro + "\", \"i\")";
 					}
 					var orderBy = "ORDER BY ?title ?created ?creator ?ro ?description ?vrc ?status";
@@ -136,7 +136,7 @@
 						+ status
 						+ ro
 						+ "OS_TOKEN"
-					+ " } " + orderBy + " LIMIT 100"
+					+ " } " + orderBy + " LIMIT 500"
 					;
 					// FILTER regex( str( ?x), \"Pack\")\
 				}else{
@@ -283,13 +283,12 @@
     </log>
     <filter regex="RO" source="get-property('default', 'entityType')">
         <then>
-            <filter regex="sparqlQuery" source="get-property('default', 'sparqlQuery')">
+            <filter regex="false" source="boolean(get-property('default', 'geometryParam'))">
                 <then>
                     <script language="js"><![CDATA[//
 		            	var query = new String(mc.getProperty('QUERY'));
 		            	query = query.replace("OS_TOKEN", '');
 						mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
-						//java.lang.System.out.println("QUERY " + mc.getPayloadXML());
 					//]]></script>
                     <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
                     <call>
@@ -395,7 +394,8 @@
                 </then>
                 <else>
                     <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
-                    <property expression="fn:concat('http://www.rohub.org/opensearch/?',get-property('geometryParam'),'&amp;','count=100')" name="uri.var.openSearchUrl" scope="default" type="STRING"/>
+                    <property expression="fn:concat('http://www.rohub.org/opensearch/?',get-property('geometryParam'),'&amp;','count=1000')" name="uri.var.openSearchUrl" scope="default" type="STRING"/>
+                    <!--<property expression="fn:concat('http://www.rohub.org/opensearch/?q=LiveRO','&amp;','count=1000')" name="uri.var.openSearchUrl" scope="default" type="STRING"/>-->
                     <log level="custom">
                         <property name="mylog" value="CALLING open search end point"/>
                     </log>
@@ -420,48 +420,11 @@
                         </then>
                         <else/>
                     </filter>
-                    <iterate expression="//*[local-name()='entry' and namespace-uri()='http://www.w3.org/2005/Atom']" id="entryIterator">
+                    <iterate expression="//m0:feed/m0:entry" id="entryIterator" xmlns:m0="http://www.w3.org/2005/Atom">
                         <target>
                             <sequence>
                                 <property expression="$body" name="curr_entry" scope="default" type="STRING"/>
                                 <script language="js"><![CDATA[//
-				                	var query = new String(mc.getProperty('QUERY'));
-				                	var currEntry = new XML(mc.getProperty('curr_entry'));
-				                	var defNamespace = new Namespace('http://www.w3.org/2005/Atom');
-				                	var id = new String(currEntry..defNamespace::id);
-				                	id = id.replace(/[+]/g, '\\\\+');
-				                	query = query.replace("OS_TOKEN", 'FILTER regex( str( ?ro), "'+ id +'") ');
-				                	query = query.replace("LIMIT 100", "LIMIT 1");
-				                	//java.lang.System.out.println("NEW QUERY " + query);
-				                	mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
-				                //]]></script>
-                                <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
-                                <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
-                                <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
-                                <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
-                                <call>
-                                    <endpoint>
-                                        <http uri-template="http://sandbox.rohub.org/rodl/sparql"/>
-                                    </endpoint>
-                                </call>
-                                <filter regex="^[45][0-9][0-9]" source="get-property('axis2', 'HTTP_SC')">
-                                    <then>
-                                        <log category="WARN" level="full">
-                                            <property name="APPL" value="FAILURE CALLING http://sandbox.rohub.org/rodl/sparql"/>
-                                            <property name="STEP" value="SUBOPERATION ENDED EXCEPTIONALLY"/>
-                                            <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
-                                            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
-                                        </log>
-                                        <script language="js"><![CDATA[//
-			                    java.lang.System.out.println("NO RESULTS");
-					             var noResult = JSON.parse('{"head":{"vars":["ro","created","title","description","vrc","creatorName","creator","status", "geometry"]},' +
-										'"results":{"bindings":[]}}');
-								 mc.setPayloadJSON(noResult);
-			         		//]]></script>
-                                    </then>
-                                    <else>
-                                        <script language="js"><![CDATA[//
-					    			var payloadJSON = mc.getPayloadJSON();
 					    			var currEntry = new XML(mc.getProperty('curr_entry'));
 					    			var geometryStr = '[]';
 									var geometryJSON = JSON.parse(geometryStr);
@@ -478,44 +441,20 @@
 									for each(var currPoly in polygons) {
 										geometryJSON.push({"type": "polygon", "value":""+currPoly});
 									}
-									//java.lang.System.out.println( "geometryJSON " + JSON.stringify(geometryJSON));
-									var bindings = payloadJSON.results.bindings;
-									for each (var currBinding in bindings) {
-										currBinding['geometry'] = geometryJSON;
-									}
+					    			var defNamespace = new Namespace('http://www.w3.org/2005/Atom');
+				                	var id = new String(currEntry..defNamespace::id);
+				                	id = id.replace(/[+]/g, '\\\\+');
 					    			
-					    			payloadJSON.head.vars.push('geometry');
-					    			//java.lang.System.out.println( "payloadJSON " + JSON.stringify(payloadJSON).replace(/\\"/g, "&quot;"));
-					    			
-					    			//check on bindings (some results of opensearch are empty)
-					    			var bb = payloadJSON.results.bindings;
-					    			if(bb.length== 0) {
-					    				java.lang.System.out.println( "NO SPARQL currEntry " + currEntry);
-					    			}
-					    			
-					    			
-					    			mc.setPayloadJSON(JSON.stringify(payloadJSON).replace(/\\"/g, "&quot;"));
-					    			
-					    			//java.lang.System.out.println( "payloadXML " + mc.getPayloadXML());
+					    			var payloadJSON = JSON.parse('{"entry":{}}');
+					    			payloadJSON.entry['id'] = id;
+					    			payloadJSON.entry['geometries'] = JSON.parse('{}');
+					    			payloadJSON.entry['geometries']['geometry'] = geometryJSON;
+					    			mc.setPayloadJSON(payloadJSON);
 				     		//]]></script>
-                                    </else>
-                                </filter>
+                                <sequence key="AggregateOSResponse"/>
                             </sequence>
                         </target>
                     </iterate>
-                    <property name="AGGREGATING" scope="default">
-                        <myns:AGGREGATING xmlns:myns="http://acsys.it/"/>
-                    </property>
-                    <aggregate id="entryIterator">
-                        <completeCondition timeout="120">
-                            <messageCount max="-1" min="-1"/>
-                        </completeCondition>
-                        <onComplete enclosingElementProperty="AGGREGATING" expression="//bindings">
-                            <script function="mergeGetListINResponse" key="mergeGetListINResponse" language="js"/>
-                            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
-                            <respond/>
-                        </onComplete>
-                    </aggregate>
                 </else>
             </filter>
         </then>

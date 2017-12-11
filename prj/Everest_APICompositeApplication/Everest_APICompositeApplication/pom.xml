@@ -12,6 +12,7 @@
     <com.example.Everest_API.api_._ROSR>capp/EnterpriseServiceBus</com.example.Everest_API.api_._ROSR>
     <com.example.Everest_API.local-entry_._transform>capp/EnterpriseServiceBus</com.example.Everest_API.local-entry_._transform>
     <com.example.Everest_API.sequence_._generalFault>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._generalFault>
+    <com.example.Everest_API.sequence_._AggregateOSResponse>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._AggregateOSResponse>
     <com.example.Everest_API.sequence_._getPermissionsIN>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._getPermissionsIN>
     <com.example.Everest_API.sequence_._Metadata_RoAnnotations>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._Metadata_RoAnnotations>
     <com.example.Everest_API.sequence_._createFolders>capp/EnterpriseServiceBus</com.example.Everest_API.sequence_._createFolders>
@@ -217,6 +218,12 @@
     <dependency>
       <groupId>com.example.Everest_API.local-entry</groupId>
       <artifactId>4003</artifactId>
+      <version>1.0.0</version>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>com.example.Everest_API.sequence</groupId>
+      <artifactId>AggregateOSResponse</artifactId>
       <version>1.0.0</version>
       <type>xml</type>
     </dependency>

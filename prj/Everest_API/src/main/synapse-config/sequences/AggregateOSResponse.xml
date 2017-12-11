@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="AggregateOSResponse" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property name="AGGREGATING" scope="default">
+        <myns:AGGREGATING xmlns:myns="http://acsys.it/"/>
+    </property>
+    <aggregate id="entryIterator">
+        <completeCondition timeout="120">
+            <messageCount max="-1" min="-1"/>
+        </completeCondition>
+        <onComplete enclosingElementProperty="AGGREGATING" expression="//entry">
+            <script language="js"><![CDATA[//
+              	var payload = mc.getPayloadXML();
+              	//java.lang.System.out.println( "IN AGGREGATION payload ids " + payload);
+              	var entries = payload.jsonObject.entry;
+              	var queryToken = 'FILTER (str(?ro) in (';
+				for each (var currEntry in entries) {
+				 	queryToken += '"' + currEntry.id + '",'
+				 	mc.setProperty(currEntry.id, currEntry.geometries);
+				 }
+								 
+				var otherEntries = payload.entry;
+				var queryToken = 'FILTER (str(?ro) in (';
+				for each (var currEntry in otherEntries) {
+				 	queryToken += '"' + currEntry.id + '",'
+				 	mc.setProperty(currEntry.id, currEntry.geometries);
+				 }
+				 
+				 queryToken += '""))';
+				 var query = new String(mc.getProperty('QUERY'));
+				 query = query.replace("OS_TOKEN",queryToken);
+				 query = query.replace("LIMIT 500","");
+				 mc.setPayloadXML( <params xmlns=""><query>{query}</query></params>);
+				 //java.lang.System.out.println( "QUERY " + mc.getPayloadXML());
+              //]]></script>
+            <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+            <property name="Content-Type" scope="transport" type="STRING" value="application/x-www-form-urlencoded"/>
+            <property name="Accept" scope="transport" type="STRING" value="application/sparql-results+json"/>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <log level="custom">
+                <property name="mylog" value="*********************** CALLING BACK END: SPARQL ********************"/>
+            </log>
+            <call>
+                <endpoint>
+                    <http uri-template="http://sandbox.rohub.org/rodl/sparql"/>
+                </endpoint>
+            </call>
+            <script language="js"><![CDATA[//
+              	var payload = mc.getPayloadJSON();
+              	//java.lang.System.out.println("SPARQL RESP " + JSON.stringify(payload));
+                var bindings = payload.results.bindings;
+                for each (var currBinding in bindings) {
+		         	var currRO =  currBinding.ro.value;
+		         	//java.lang.System.out.println( "currRO " + currRO);
+		         	var currGeometries = new XML(mc.getProperty(new String(currRO)));
+		         	//java.lang.System.out.println( "currGeometry " + currGeometries);
+		         	var geometryStr = '[]';
+					var geometryJSON = JSON.parse(geometryStr);
+					//java.lang.System.out.println( "currGeometries.geometry " + currGeometries.geometry);
+					for each(var currGEO in currGeometries.geometry) {
+						geometryJSON.push(JSON.parse('{"type": "' + currGEO.type + '", "value":"' +currGEO.value+ '"}'));
+					}
+					
+		         	currBinding['geometry'] = geometryJSON;
+		         }
+                payload.head.vars.push('geometry');
+                mc.setPayloadJSON(payload);                
+              //]]></script>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <respond/>
+        </onComplete>
+    </aggregate>
+</sequence>
