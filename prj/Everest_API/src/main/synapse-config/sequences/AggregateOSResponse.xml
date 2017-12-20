@@ -14,17 +14,33 @@
               	var entries = payload.jsonObject.entry;
               	var queryToken = 'FILTER (str(?ro) in (';
 				for each (var currEntry in entries) {
-				 	queryToken += '"' + currEntry.id + '",'
-				 	mc.setProperty(currEntry.id, currEntry.geometries);
-				 }
+					var geometries = currEntry..geometries;
+				 	var geometryStr = '[]';
+					var geometryJSON = JSON.parse(geometryStr);
+					for each(var currGEO in geometries.geometry) {
+						geometryJSON.push({"type":""+currGEO..type, "value":""+currGEO..value});
+					}
+					var id = new String(currEntry.id);
+					id = id.replace(/[+]/g, '\\\\+');
+					queryToken += '"' + currEntry.id + '",'
+				 	mc.setProperty(currEntry.id, JSON.stringify(geometryJSON));
+				}
 								 
 				var otherEntries = payload.entry;
-				var queryToken = 'FILTER (str(?ro) in (';
 				for each (var currEntry in otherEntries) {
-				 	queryToken += '"' + currEntry.id + '",'
-				 	mc.setProperty(currEntry.id, currEntry.geometries);
+				 	var geometries = currEntry..geometries;
+				 	var geometryStr = '[]';
+					var geometryJSON = JSON.parse(geometryStr);
+					for each(var currGEO in geometries.geometry) {
+						//java.lang.System.out.println( "IN AGGREGATION currGEO " + currGEO);
+						geometryJSON.push({"type":""+currGEO..type, "value":""+currGEO..value});
+					}
+					var id = new String(currEntry.id);
+					id = id.replace(/[+]/g, '\\\\+');
+					queryToken += '"' + currEntry.id + '",'
+				 	mc.setProperty(currEntry.id, JSON.stringify(geometryJSON));
 				 }
-				 
+				 //java.lang.System.out.println( "IN AGGREGATION queryToken2 " + queryToken);
 				 queryToken += '""))';
 				 var query = new String(mc.getProperty('QUERY'));
 				 query = query.replace("OS_TOKEN",queryToken);
@@ -44,27 +60,11 @@
                     <http uri-template="http://sandbox.rohub.org/rodl/sparql"/>
                 </endpoint>
             </call>
-            <script language="js"><![CDATA[//
-              	var payload = mc.getPayloadJSON();
-              	//java.lang.System.out.println("SPARQL RESP " + JSON.stringify(payload));
-                var bindings = payload.results.bindings;
-                for each (var currBinding in bindings) {
-		         	var currRO =  currBinding.ro.value;
-		         	//java.lang.System.out.println( "currRO " + currRO);
-		         	var currGeometries = new XML(mc.getProperty(new String(currRO)));
-		         	//java.lang.System.out.println( "currGeometry " + currGeometries);
-		         	var geometryStr = '[]';
-					var geometryJSON = JSON.parse(geometryStr);
-					//java.lang.System.out.println( "currGeometries.geometry " + currGeometries.geometry);
-					for each(var currGEO in currGeometries.geometry) {
-						geometryJSON.push(JSON.parse('{"type": "' + currGEO.type + '", "value":"' +currGEO.value+ '"}'));
-					}
-					
-		         	currBinding['geometry'] = geometryJSON;
-		         }
-                payload.head.vars.push('geometry');
-                mc.setPayloadJSON(payload);                
-              //]]></script>
+            <!--  <script language="js"><![CDATA[//
+              java.lang.System.out.println( "SPARQL payload AFTER " + mc.getPayloadXML());
+              //]]></script> -->
+            <property expression="json-eval($.)" name="JsonPayload" scope="default" type="STRING"/>
+            <class name="com.custom.json.payload.CustomJsonPayloadSetter"/>
             <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
             <respond/>
         </onComplete>

@@ -320,6 +320,12 @@
                     <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
                     <filter xpath="//results[count(*)=0]">
                         <then>
+                            <script language="js"><![CDATA[//
+			                    java.lang.System.out.println("NO RESULTS");
+					             var noResult = JSON.parse('{"head":{"vars":["ro","created","title","description","vrc","creatorName","creator","status", "geometry"]},' +
+										'"results":{"bindings":[]}}');
+								 mc.setPayloadJSON(noResult);
+			         		//]]></script>
                             <respond/>
                         </then>
                         <else/>
@@ -443,13 +449,11 @@
 									}
 					    			var defNamespace = new Namespace('http://www.w3.org/2005/Atom');
 				                	var id = new String(currEntry..defNamespace::id);
-				                	id = id.replace(/[+]/g, '\\\\+');
-					    			
 					    			var payloadJSON = JSON.parse('{"entry":{}}');
 					    			payloadJSON.entry['id'] = id;
 					    			payloadJSON.entry['geometries'] = JSON.parse('{}');
 					    			payloadJSON.entry['geometries']['geometry'] = geometryJSON;
-					    			mc.setPayloadJSON(payloadJSON);
+					    			mc.setPayloadJSON(JSON.stringify(payloadJSON));
 				     		//]]></script>
                                 <sequence key="AggregateOSResponse"/>
                             </sequence>
