@@ -107,4 +107,7 @@
     <artifact name="AggregateOSResponse" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
         <file>src/main/synapse-config/sequences/AggregateOSResponse.xml</file>
     </artifact>
+    <artifact name="SleepIN" groupId="com.example.Everest_API.sequence" version="1.0.0" type="synapse/sequence" serverRole="EnterpriseServiceBus">
+        <file>src/main/synapse-config/sequences/SleepIN.xml</file>
+    </artifact>
 </artifacts>

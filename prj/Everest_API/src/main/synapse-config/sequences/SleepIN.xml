@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="SleepIN" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property expression="$url:seconds" name="uri.var.seconds" scope="default" type="STRING"/>
+    <script language="js"><![CDATA[//
+            	var secondDelay = mc.getProperty('uri.var.seconds');
+				java.lang.Thread.sleep( secondDelay * 1000);
+			//]]></script>
+    <log category="WARN" level="headers">
+        <property expression="get-property('uri.var.seconds')" name="Sleeping seconds"/>
+    </log>
+    <respond/>
+</sequence>
