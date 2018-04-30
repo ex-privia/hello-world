@@ -157,13 +157,6 @@
             </log>
         </else>
     </filter>
-    <clone continueParent="true">
-        <target sequence="CreateROs_AggregateROAnnotations"/>
-    </clone>
-    <log level="custom">
-        <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
-        <property expression="$trp:Location" name="LOCATION"/>
-    </log>
     <!--
                     	do the next invocation to the backend, if there is a "mode" field in the client request:
 						2. Optional setting public/private visibility mode (access rights).
@@ -175,6 +168,13 @@
     <clone continueParent="true">
         <target sequence="CreateRos_SetMode"/>
     </clone>
+    <clone continueParent="true">
+        <target sequence="CreateROs_AggregateROAnnotations"/>
+    </clone>
+    <log level="custom">
+        <property name="mylog" value="***************************** RECEIVED RESPONSE FROM: CREATE A NEW RESEARCH OBJECT **************************"/>
+        <property expression="$trp:Location" name="LOCATION"/>
+    </log>
     <!--++
                         Let's call the RO API to annotate the just created RO with title and description (see REQUEST below), and let's reply to the client (see RESPONSE below).
 
