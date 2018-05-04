@@ -100,7 +100,7 @@
         <endpoint name="createRo">
             <http method="post" uri-template="{uri.var.resource}">
                 <timeout>
-                    <duration>90000</duration>
+                    <duration>240000</duration>
                     <responseAction>fault</responseAction>
                 </timeout>
                 <suspendOnFailure>

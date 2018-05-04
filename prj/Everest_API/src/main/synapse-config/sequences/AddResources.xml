@@ -203,7 +203,7 @@
                                     <property action="remove" name="Link" scope="transport"/>
                                     <!-- avoid setting the Slug parameter, thus letting RO API to choose annotation name -->
                                     <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
-                                    <iterate continueParent="true" expression="$body//forResource/*">
+                                    <iterate expression="$body//forResource/*" id="SPLIT_AND_GATHER_INTERNAL_RESOURCE_ANNOTATIONS">
                                         <target>
                                             <sequence>
                                                 <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
@@ -236,7 +236,9 @@
                                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                                                         </log>
-                                                        <drop/>
+                                                        <script language="js"><![CDATA[//
+			                                            	mc.setPayloadXML(<annotationForInternalResourceNotAggregated/>);
+			                                            //]]></script>
                                                     </then>
                                                     <else>
                                                         <log>
@@ -250,7 +252,44 @@
                                             </sequence>
                                         </target>
                                     </iterate>
-                                    <iterate continueParent="true" expression="$body//forProxy/*">
+                                    <aggregate id="SPLIT_AND_GATHER_INTERNAL_RESOURCE_ANNOTATIONS">
+                                        <completeCondition>
+                                            <messageCount max="-1" min="-1"/>
+                                        </completeCondition>
+                                        <onComplete expression="$body/*[1]">
+                                            <script language="js"><![CDATA[//
+					                    	//curl -v -X POST -H "Authorization: Bearer ZXNiOmF5WjNTd2tuU1FiNg==" http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro=http://sandbox.rohub.org/rodl/ROs/test-RP2-snapshot/
+					                    	//]]></script>
+                                            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                                            <property name="Authorization" scope="transport" type="STRING" value="Bearer ZXNiOmF5WjNTd2tuU1FiNg=="/>
+                                            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+                                            <script language="js"><![CDATA[//
+				                            	mc.setPayloadXML(<nothing/>);
+												mc.getEnvelope().getBody().getFirstElement().detach();
+											//]]></script>
+                                            <call>
+                                                <endpoint name="reindexAfterAggregatingAnnotationsForInternalResource_Add">
+                                                    <http method="post" uri-template="http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro={uri.var.location}">
+                                                        <timeout>
+                                                            <duration>240000</duration>
+                                                            <responseAction>fault</responseAction>
+                                                        </timeout>
+                                                        <suspendOnFailure>
+                                                            <errorCodes>-1</errorCodes>
+                                                            <initialDuration>0</initialDuration>
+                                                            <progressionFactor>1.0</progressionFactor>
+                                                            <maximumDuration>0</maximumDuration>
+                                                        </suspendOnFailure>
+                                                        <markForSuspension>
+                                                            <errorCodes>-1</errorCodes>
+                                                        </markForSuspension>
+                                                    </http>
+                                                </endpoint>
+                                            </call>
+                                            <drop/>
+                                        </onComplete>
+                                    </aggregate>
+                                    <iterate expression="$body//forProxy/*" id="SPLIT_AND_GATHER_INTERNAL_PROXY_ANNOTATIONS">
                                         <target>
                                             <sequence>
                                                 <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
@@ -283,7 +322,9 @@
                                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                                                         </log>
-                                                        <drop/>
+                                                        <script language="js"><![CDATA[//
+			                                            	mc.setPayloadXML(<annotationForInternalProxyNotAggregated/>);
+			                                            //]]></script>
                                                     </then>
                                                     <else>
                                                         <log>
@@ -297,6 +338,43 @@
                                             </sequence>
                                         </target>
                                     </iterate>
+                                    <aggregate id="SPLIT_AND_GATHER_INTERNAL_PROXY_ANNOTATIONS">
+                                        <completeCondition>
+                                            <messageCount max="-1" min="-1"/>
+                                        </completeCondition>
+                                        <onComplete expression="$body/*[1]">
+                                            <script language="js"><![CDATA[//
+					                    	//curl -v -X POST -H "Authorization: Bearer ZXNiOmF5WjNTd2tuU1FiNg==" http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro=http://sandbox.rohub.org/rodl/ROs/test-RP2-snapshot/
+					                    	//]]></script>
+                                            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                                            <property name="Authorization" scope="transport" type="STRING" value="Bearer ZXNiOmF5WjNTd2tuU1FiNg=="/>
+                                            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+                                            <script language="js"><![CDATA[//
+				                            	mc.setPayloadXML(<nothing/>);
+												mc.getEnvelope().getBody().getFirstElement().detach();
+											//]]></script>
+                                            <call>
+                                                <endpoint name="reindexAfterAggregatingAnnotationsForInternalProxy_Add">
+                                                    <http method="post" uri-template="http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro={uri.var.location}">
+                                                        <timeout>
+                                                            <duration>240000</duration>
+                                                            <responseAction>fault</responseAction>
+                                                        </timeout>
+                                                        <suspendOnFailure>
+                                                            <errorCodes>-1</errorCodes>
+                                                            <initialDuration>0</initialDuration>
+                                                            <progressionFactor>1.0</progressionFactor>
+                                                            <maximumDuration>0</maximumDuration>
+                                                        </suspendOnFailure>
+                                                        <markForSuspension>
+                                                            <errorCodes>-1</errorCodes>
+                                                        </markForSuspension>
+                                                    </http>
+                                                </endpoint>
+                                            </call>
+                                            <drop/>
+                                        </onComplete>
+                                    </aggregate>
                                 </then>
                                 <else/>
                             </filter>
@@ -475,7 +553,7 @@
                                         <property expression="get-property('Authorization')" name="Authorization"/>
                                     </log>
                                     <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
-                                    <iterate continueParent="true" expression="$body//forResource/*">
+                                    <iterate expression="$body//forResource/*" id="SPLIT_AND_GATHER_EXTERNAL_RESOURCE_ANNOTATIONS">
                                         <target>
                                             <sequence>
                                                 <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
@@ -513,7 +591,9 @@
                                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                                                         </log>
-                                                        <drop/>
+                                                        <script language="js"><![CDATA[//
+			                                            	mc.setPayloadXML(<annotationForExternalProxyNotAggregated/>);
+			                                            //]]></script>
                                                     </then>
                                                     <else>
                                                         <log>
@@ -527,7 +607,44 @@
                                             </sequence>
                                         </target>
                                     </iterate>
-                                    <iterate continueParent="true" expression="$body//forProxy/*">
+                                    <aggregate id="SPLIT_AND_GATHER_EXTERNAL_RESOURCE_ANNOTATIONS">
+                                        <completeCondition>
+                                            <messageCount max="-1" min="-1"/>
+                                        </completeCondition>
+                                        <onComplete expression="$body/*[1]">
+                                            <script language="js"><![CDATA[//
+					                    	//curl -v -X POST -H "Authorization: Bearer ZXNiOmF5WjNTd2tuU1FiNg==" http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro=http://sandbox.rohub.org/rodl/ROs/test-RP2-snapshot/
+					                    	//]]></script>
+                                            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                                            <property name="Authorization" scope="transport" type="STRING" value="Bearer ZXNiOmF5WjNTd2tuU1FiNg=="/>
+                                            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+                                            <script language="js"><![CDATA[//
+				                            	mc.setPayloadXML(<nothing/>);
+												mc.getEnvelope().getBody().getFirstElement().detach();
+											//]]></script>
+                                            <call>
+                                                <endpoint name="reindexAfterAggregatingAnnotationsForExternalResource_Add">
+                                                    <http method="post" uri-template="http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro={uri.var.location}">
+                                                        <timeout>
+                                                            <duration>240000</duration>
+                                                            <responseAction>fault</responseAction>
+                                                        </timeout>
+                                                        <suspendOnFailure>
+                                                            <errorCodes>-1</errorCodes>
+                                                            <initialDuration>0</initialDuration>
+                                                            <progressionFactor>1.0</progressionFactor>
+                                                            <maximumDuration>0</maximumDuration>
+                                                        </suspendOnFailure>
+                                                        <markForSuspension>
+                                                            <errorCodes>-1</errorCodes>
+                                                        </markForSuspension>
+                                                    </http>
+                                                </endpoint>
+                                            </call>
+                                            <drop/>
+                                        </onComplete>
+                                    </aggregate>
+                                    <iterate expression="$body//forProxy/*" id="SPLIT_AND_GATHER_EXTERNAL_PROXY_ANNOTATIONS">
                                         <target>
                                             <sequence>
                                                 <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
@@ -560,7 +677,9 @@
                                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                                                         </log>
-                                                        <drop/>
+                                                        <script language="js"><![CDATA[//
+			                                            	mc.setPayloadXML(<annotationForExternalProxyNotAggregated/>);
+			                                            //]]></script>
                                                     </then>
                                                     <else>
                                                         <log>
@@ -574,6 +693,43 @@
                                             </sequence>
                                         </target>
                                     </iterate>
+                                    <aggregate id="SPLIT_AND_GATHER_EXTERNAL_PROXY_ANNOTATIONS">
+                                        <completeCondition>
+                                            <messageCount max="-1" min="-1"/>
+                                        </completeCondition>
+                                        <onComplete expression="$body/*[1]">
+                                            <script language="js"><![CDATA[//
+					                    	//curl -v -X POST -H "Authorization: Bearer ZXNiOmF5WjNTd2tuU1FiNg==" http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro=http://sandbox.rohub.org/rodl/ROs/test-RP2-snapshot/
+					                    	//]]></script>
+                                            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                                            <property name="Authorization" scope="transport" type="STRING" value="Bearer ZXNiOmF5WjNTd2tuU1FiNg=="/>
+                                            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+                                            <script language="js"><![CDATA[//
+				                            	mc.setPayloadXML(<nothing/>);
+												mc.getEnvelope().getBody().getFirstElement().detach();
+											//]]></script>
+                                            <call>
+                                                <endpoint name="reindexAfterAggregatingAnnotationsForExternalProxy_Add">
+                                                    <http method="post" uri-template="http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro={uri.var.location}">
+                                                        <timeout>
+                                                            <duration>240000</duration>
+                                                            <responseAction>fault</responseAction>
+                                                        </timeout>
+                                                        <suspendOnFailure>
+                                                            <errorCodes>-1</errorCodes>
+                                                            <initialDuration>0</initialDuration>
+                                                            <progressionFactor>1.0</progressionFactor>
+                                                            <maximumDuration>0</maximumDuration>
+                                                        </suspendOnFailure>
+                                                        <markForSuspension>
+                                                            <errorCodes>-1</errorCodes>
+                                                        </markForSuspension>
+                                                    </http>
+                                                </endpoint>
+                                            </call>
+                                            <drop/>
+                                        </onComplete>
+                                    </aggregate>
                                 </then>
                                 <else/>
                             </filter>

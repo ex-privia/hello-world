@@ -23,7 +23,7 @@
                     <!-- avoid setting the Slug parameter, thus letting RO API to choose annotation name -->
                     <property expression="get-property('AUTH')" name="Authorization" scope="transport" type="STRING"/>
                     <property expression="get-property('LOCATION')" name="uri.var.location" scope="default" type="STRING"/>
-                    <iterate continueParent="true" expression="$body//forResource/*">
+                    <iterate expression="$body//forResource/*" id="SPLIT_AND_GATHER_RO_ANNOTATIONS">
                         <target>
                             <sequence>
                                 <property expression="$body" name="RDF_PROPERTY" scope="default" type="STRING"/>
@@ -33,7 +33,7 @@
                                     <endpoint name="aggregateAnnotationsForRo">
                                         <http method="post" uri-template="{uri.var.location}">
                                             <timeout>
-                                                <duration>90000</duration>
+                                                <duration>240000</duration>
                                                 <responseAction>fault</responseAction>
                                             </timeout>
                                             <suspendOnFailure>
@@ -56,6 +56,9 @@
                                             <property expression="get-property('REQUEST_ID')" name="REQUEST_ID"/>
                                             <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC"/>
                                         </log>
+                                        <script language="js"><![CDATA[//
+                                        	mc.setPayloadXML(<annotationNotAggregated/>);
+                                        //]]></script>
                                     </then>
                                     <else>
                                         <log>
@@ -66,10 +69,46 @@
                                         </log>
                                     </else>
                                 </filter>
-                                <drop/>
                             </sequence>
                         </target>
                     </iterate>
+                    <aggregate id="SPLIT_AND_GATHER_RO_ANNOTATIONS">
+                        <completeCondition>
+                            <messageCount max="-1" min="-1"/>
+                        </completeCondition>
+                        <onComplete expression="$body/*[1]">
+                            <script language="js"><![CDATA[//
+	                    	//curl -v -X POST -H "Authorization: Bearer ZXNiOmF5WjNTd2tuU1FiNg==" http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro=http://sandbox.rohub.org/rodl/ROs/test-RP2-snapshot/
+	                    	//]]></script>
+                            <property action="remove" name="TRANSPORT_HEADERS" scope="axis2"/>
+                            <property name="Authorization" scope="transport" type="STRING" value="Bearer ZXNiOmF5WjNTd2tuU1FiNg=="/>
+                            <property name="FORCE_POST_PUT_NOBODY" scope="axis2" type="BOOLEAN" value="true"/>
+                            <script language="js"><![CDATA[//
+                            	mc.setPayloadXML(<nothing/>);
+								mc.getEnvelope().getBody().getFirstElement().detach();
+							//]]></script>
+                            <call>
+                                <endpoint name="reindexAfterAggregatingAnnotationsForRo">
+                                    <http method="post" uri-template="http://sandbox.rohub.org/rodl/service/solr/reindex-ro/?ro={uri.var.location}">
+                                        <timeout>
+                                            <duration>240000</duration>
+                                            <responseAction>fault</responseAction>
+                                        </timeout>
+                                        <suspendOnFailure>
+                                            <errorCodes>-1</errorCodes>
+                                            <initialDuration>0</initialDuration>
+                                            <progressionFactor>1.0</progressionFactor>
+                                            <maximumDuration>0</maximumDuration>
+                                        </suspendOnFailure>
+                                        <markForSuspension>
+                                            <errorCodes>-1</errorCodes>
+                                        </markForSuspension>
+                                    </http>
+                                </endpoint>
+                            </call>
+                            <drop/>
+                        </onComplete>
+                    </aggregate>
                 </then>
                 <else/>
             </filter>
